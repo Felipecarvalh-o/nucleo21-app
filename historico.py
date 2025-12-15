@@ -53,3 +53,14 @@ def ranking_jogos():
 
     ranking_final.sort(key=lambda x: x[1], reverse=True)
     return ranking_final
+
+def exportar_historico():
+    historico = carregar_historico()
+    linhas = ["data,fechamento,melhor_linha,pontos"]
+
+    for h in historico:
+        linhas.append(
+            f"{h['data']},{h['fechamento']},{h['melhor_linha']},{h['pontos']}"
+        )
+
+    return "\n".join(linhas)
