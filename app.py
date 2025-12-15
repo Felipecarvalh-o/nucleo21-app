@@ -16,6 +16,34 @@ from simulador import simular_cenario
 
 st.set_page_config("Núcleo 21", "🍀", layout="centered")
 
+# ---------------- ESTILO GLOBAL ----------------
+st.markdown(
+    """
+    <style>
+    .numero-verde {
+        background:#1E8449;
+        color:white;
+        text-align:center;
+        padding:12px;
+        border-radius:12px;
+        font-size:20px;
+        font-weight:700;
+        box-shadow:0 4px 8px rgba(0,0,0,0.15);
+    }
+    .numero-azul {
+        background:#2471A3;
+        color:white;
+        text-align:center;
+        padding:10px;
+        border-radius:10px;
+        font-size:16px;
+        box-shadow:0 3px 6px rgba(0,0,0,0.15);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # ---------------- ESTRATÉGIAS ----------------
 ESTRATEGIAS = {
     "nucleo": {
@@ -36,18 +64,17 @@ ESTRATEGIAS = {
 }
 
 # ---------------- ESTADO ----------------
-if "logado" not in st.session_state:
-    st.session_state.logado = False
-if "usuario" not in st.session_state:
-    st.session_state.usuario = ""
-if "analise_pronta" not in st.session_state:
-    st.session_state.analise_pronta = False
-if "resultado_sim" not in st.session_state:
-    st.session_state.resultado_sim = None
+for k, v in {
+    "logado": False,
+    "usuario": "",
+    "analise_pronta": False,
+    "resultado_sim": None
+}.items():
+    st.session_state.setdefault(k, v)
 
 # ---------------- LOGIN ----------------
 if not st.session_state.logado:
-    st.title("🔐 Login")
+    st.title("🔐 Acesso ao Núcleo 21")
     u = st.text_input("Usuário")
     s = st.text_input("Senha", type="password")
     if st.button("Entrar"):
@@ -64,9 +91,9 @@ with st.sidebar:
     st.header("⚙️ Configurações")
 
     st.caption(
-        "🪜 **Passo a passo:** "
-        "1️⃣ Escolha a estratégia | "
-        "2️⃣ Informe o resultado | "
+        "🪜 **Passo a passo**  \n"
+        "1️⃣ Escolha a estratégia  \n"
+        "2️⃣ Informe o resultado  \n"
         "3️⃣ Gere e utilize os jogos"
     )
 
@@ -75,20 +102,20 @@ with st.sidebar:
     )
 
     estrategia_key = st.selectbox(
-        "🧠 Estratégia de Jogo",
+        "🧠 Estratégia",
         list(ESTRATEGIAS.keys()),
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
 
     st.info(ESTRATEGIAS[estrategia_key]["descricao"])
-    st.write(f"👤 {st.session_state.usuario}")
+    st.write(f"👤 **{st.session_state.usuario}**")
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
 
 st.warning(
-    "⚠️ Este sistema não prevê resultados nem garante prêmios. "
-    "Ele organiza estratégias para quem prefere jogar com método."
+    "⚠️ Sistema educacional e estatístico. "
+    "Não prevê resultados nem garante prêmios."
 )
 
 resultado_txt = st.text_input(
@@ -96,7 +123,7 @@ resultado_txt = st.text_input(
     placeholder="01 02 03 04 05 06"
 )
 
-if st.button("🔍 ANALISAR"):
+if st.button("🔍 Analisar"):
     resultado = converter_lista(resultado_txt)
     if len(resultado) != 6:
         st.error("Digite exatamente 6 dezenas")
@@ -105,7 +132,6 @@ if st.button("🔍 ANALISAR"):
     pool = list(range(1, 61))
     fechamento = FECHAMENTOS[fechamento_nome]
 
-    # -------- NÚCLEO INTELIGENTE --------
     if estrategia_key == "nucleo":
         _, melhor = processar_fechamento(pool, resultado, fechamento)
 
@@ -120,59 +146,43 @@ if st.button("🔍 ANALISAR"):
 
         st.session_state.melhor = melhor
         st.session_state.jogos = gerar_jogos(melhor["numeros"])
-        st.session_state.analise_pronta = True
-        st.session_state.resultado_sim = None
-
-    # -------- MATRIZ DE COBERTURA --------
     else:
         import random
-        numeros = list(range(1, 61))
-        random.shuffle(numeros)
-
-        jogos_matriciais = [
-            sorted(numeros[i:i+6]) for i in range(0, 60, 6)
+        nums = list(range(1, 61))
+        random.shuffle(nums)
+        st.session_state.jogos = [
+            sorted(nums[i:i+6]) for i in range(0, 60, 6)
         ]
 
-        st.session_state.jogos = jogos_matriciais
-        st.session_state.analise_pronta = True
-        st.session_state.resultado_sim = None
+    st.session_state.analise_pronta = True
+    st.session_state.resultado_sim = None
 
 # ---------------- RESULTADOS ----------------
 if st.session_state.analise_pronta:
     st.subheader("🎯 Resultado da Estratégia")
 
     if estrategia_key == "nucleo":
-        st.subheader("🏆 Melhor Linha Selecionada")
+        st.subheader("🏆 Linha Base Selecionada")
         cols = st.columns(6)
         for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
             c.markdown(
-                f"<div style='background:#2ecc71;color:white;"
-                f"text-align:center;padding:10px;border-radius:8px;"
-                f"font-size:18px;font-weight:bold;'>"
-                f"{str(n).zfill(2)}</div>",
+                f"<div class='numero-verde'>{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
             )
-        st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
+        st.caption(f"Pontuação obtida: **{st.session_state.melhor['pontos']}**")
 
     st.subheader("🎲 Jogos Gerados")
     for i, jogo in enumerate(st.session_state.jogos, 1):
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
             c.markdown(
-                f"<div style='background:#3498db;color:white;"
-                f"text-align:center;padding:8px;border-radius:6px;"
-                f"font-size:16px;'>"
-                f"{str(n).zfill(2)}</div>",
+                f"<div class='numero-azul'>{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
             )
         st.caption(f"Jogo {i}")
 
-    # -------- SIMULAÇÃO --------
-    st.subheader("🧪 Simulação Educacional")
-    st.caption(
-        "Simulação baseada em 500 sorteios aleatórios. "
-        "Ferramenta educacional — não garante resultados."
-    )
+    # ---------------- SIMULAÇÃO ----------------
+    st.subheader("🧪 Simulação Estatística")
 
     if st.button("▶️ Simular Estratégia"):
         st.session_state.resultado_sim = simular_cenario(
@@ -181,39 +191,28 @@ if st.session_state.analise_pronta:
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
-
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("📊 Média", r["media"])
         c2.metric("🏆 Máximo", r["maximo"])
         c3.metric("⭐ ≥4", r["acima_4"])
         c4.metric("❌ Zeros", r["zeros"])
 
-        # -------- COMPARATIVO --------
-        st.subheader("📊 Comparativo Pessoal por Estratégia")
-
+        st.subheader("📊 Comparativo Pessoal")
         resumo = resumo_por_estrategia(st.session_state.usuario)
 
         if resumo:
-            df_resumo = pd.DataFrame(resumo)
-
-            mapa = {
+            df = pd.DataFrame(resumo)
+            df["estrategia"] = df["estrategia"].map({
                 "nucleo": "🟢 Núcleo Inteligente™",
                 "matriz": "🔵 Matriz de Cobertura™"
-            }
-            df_resumo["estrategia"] = df_resumo["estrategia"].map(mapa)
+            })
 
-            st.dataframe(df_resumo, use_container_width=True, hide_index=True)
+            st.dataframe(df, use_container_width=True, hide_index=True)
 
-            melhor_est = df_resumo.sort_values("media", ascending=False).iloc[0]
-
+            melhor = df.sort_values("media", ascending=False).iloc[0]
             st.success(
-                f"📌 Com base nas suas análises, "
-                f"**{melhor_est['estrategia']}** "
-                f"tem apresentado melhor desempenho médio para você."
-            )
-        else:
-            st.info(
-                "Ainda não há dados suficientes para comparar estratégias."
+                f"📌 Para você, **{melhor['estrategia']}** "
+                f"tem apresentado melhor desempenho médio."
             )
 
 # ---------------- EVOLUÇÃO ----------------
@@ -231,34 +230,29 @@ if len(dados) >= 2:
         df,
         x="ordem",
         y=["pontos", "media_movel"],
-        markers=True,
-        labels={"value": "Pontos", "ordem": "Análises"},
-        title="Evolução de Pontos (com média móvel)"
+        markers=True
     )
-
     st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Faça mais análises para visualizar sua evolução.")
 
-# ---------------- RANKING GERAL ----------------
+# ---------------- RANKING ----------------
 st.divider()
 st.subheader("🏅 Ranking Geral")
 
 ranking = gerar_ranking()
-
 if ranking:
-    df_rank = pd.DataFrame(ranking)
-    df_rank = df_rank.sort_values("media", ascending=False)
-    st.dataframe(df_rank, use_container_width=True, hide_index=True)
+    df = pd.DataFrame(ranking).sort_values("media", ascending=False)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 else:
-    st.info("Ainda não há dados suficientes para gerar o ranking.")
+    st.info("Ainda não há dados suficientes.")
 
 # ---------------- RODAPÉ ----------------
 st.markdown(
-    "<hr><div style='text-align:center;color:gray;font-size:14px;'>"
+    "<hr><div style='text-align:center;color:#777;font-size:13px;'>"
     "<strong>⚠️ Aviso Legal</strong><br>"
     "Ferramenta educacional e estatística. "
-    "Não possui vínculo com a Caixa ou loterias oficiais."
+    "Sem vínculo com a Caixa ou loterias oficiais."
     "</div>",
     unsafe_allow_html=True
 )
