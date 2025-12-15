@@ -1,105 +1,67 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 from engine import processar_fechamento, gerar_jogos
-from historico import registrar_analise, gerar_ranking, gerar_ranking_por_usuario
+from historico import (
+    registrar_analise,
+    gerar_ranking,
+    gerar_ranking_por_usuario,
+    listar_analises_usuario
+)
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
 from simulador import simular_cenario
 
-# =============================
-# CONFIGURAÇÃO
-# =============================
-st.set_page_config(
-    page_title="Núcleo 21",
-    page_icon="🍀",
-    layout="centered"
-)
+st.set_page_config("Núcleo 21", "🍀", layout="centered")
 
-# =============================
-# ESTADOS
-# =============================
-defaults = {
-    "logado": False,
-    "usuario": "",
-    "aceitou_termos": False,
-    "analise_pronta": False,
-    "melhor": None,
-    "jogos": [],
-    "resultado_sim": None,
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+# ---------------- ESTADO ----------------
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+if "usuario" not in st.session_state:
+    st.session_state.usuario = ""
+if "analise_pronta" not in st.session_state:
+    st.session_state.analise_pronta = False
+if "resultado_sim" not in st.session_state:
+    st.session_state.resultado_sim = None
 
-# =============================
-# LOGIN
-# =============================
+# ---------------- LOGIN ----------------
 if not st.session_state.logado:
-    st.title("🔐 Núcleo 21 — Login")
-    usuario = st.text_input("Usuário")
-    senha = st.text_input("Senha", type="password")
-
+    st.title("🔐 Login")
+    u = st.text_input("Usuário")
+    s = st.text_input("Senha", type="password")
     if st.button("Entrar"):
-        if usuario and senha:
+        if u and s:
             st.session_state.logado = True
-            st.session_state.usuario = usuario
+            st.session_state.usuario = u
             st.rerun()
         else:
             st.error("Informe usuário e senha")
     st.stop()
 
-# =============================
-# TERMOS
-# =============================
-if not st.session_state.aceitou_termos:
-    st.title("📄 Termos de Uso")
-    st.markdown(
-        """
-        ⚠️ **Aviso Importante**
-
-        O Núcleo 21 é uma ferramenta **educacional e estatística**.
-        Não garante ganhos, não prevê resultados e não interfere em sorteios oficiais.
-        """
-    )
-    concordo = st.checkbox("Li e concordo com os Termos de Uso")
-    if st.button("Continuar"):
-        if concordo:
-            st.session_state.aceitou_termos = True
-            st.rerun()
-        else:
-            st.error("Você precisa concordar para continuar.")
-    st.stop()
-
-# =============================
-# SIDEBAR
-# =============================
+# ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.header("⚙️ Configurações")
-    fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
-    st.divider()
-    st.write(f"👤 Usuário: **{st.session_state.usuario}**")
+    fechamento_nome = st.selectbox(
+        "Fechamento", list(FECHAMENTOS.keys())
+    )
+    st.write(f"👤 {st.session_state.usuario}")
 
-# =============================
-# APP
-# =============================
+# ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
-st.caption("Ferramenta educacional e estatística")
-
-resultado_text = st.text_input(
+resultado_txt = st.text_input(
     "Resultado do sorteio (6 dezenas)",
     placeholder="01 02 03 04 05 06"
 )
 
-if st.button("🔍 ANALISAR AGORA", use_container_width=True):
-    resultado = converter_lista(resultado_text)
+if st.button("🔍 ANALISAR"):
+    resultado = converter_lista(resultado_txt)
     if len(resultado) != 6:
-        st.error("Digite exatamente 6 dezenas.")
+        st.error("Digite exatamente 6 dezenas")
         st.stop()
 
     pool = list(range(1, 61))
     fechamento = FECHAMENTOS[fechamento_nome]
-
     _, melhor = processar_fechamento(pool, resultado, fechamento)
 
     registrar_analise(
@@ -115,51 +77,31 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     st.session_state.analise_pronta = True
     st.session_state.resultado_sim = None
 
-# =============================
-# RESULTADOS
-# =============================
+# ---------------- RESULTADOS ----------------
 if st.session_state.analise_pronta:
-    melhor = st.session_state.melhor
-    jogos = st.session_state.jogos
-
     st.subheader("🏆 Melhor Linha")
     cols = st.columns(6)
-    for col, n in zip(cols, sorted(melhor["numeros"])):
-        col.markdown(
+    for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
+        c.markdown(
             f"<div style='background:#2ecc71;color:white;"
             f"text-align:center;padding:10px;border-radius:8px;"
             f"font-size:18px;font-weight:bold;'>"
             f"{str(n).zfill(2)}</div>",
             unsafe_allow_html=True
         )
-    st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
+    st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
 
-    st.subheader("🎟️ Sugestões de Jogos")
-    for jogo in jogos:
-        cols = st.columns(6)
-        for col, n in zip(cols, jogo):
-            col.markdown(
-                f"<div style='background:#2ecc71;color:white;"
-                f"text-align:center;padding:8px;border-radius:6px;"
-                f"font-weight:bold;'>"
-                f"{str(n).zfill(2)}</div>",
-                unsafe_allow_html=True
-            )
-        st.write("")
-
-    # =============================
-    # SIMULAÇÃO (layout melhorado)
-    # =============================
-    st.divider()
+    # -------- SIMULAÇÃO --------
     st.subheader("🧪 Simulação Educacional")
     st.caption(
-    "🧪 Simulação educacional baseada em 500 sorteios aleatórios. "
-    "Serve apenas para estudo estatístico e não representa previsões."
-)
+        "🧪 Simulação educacional baseada em 500 sorteios aleatórios. "
+        "Não representa previsões nem garante resultados."
+    )
 
-
-    if st.button("▶️ Simular Estratégia", use_container_width=True):
-        st.session_state.resultado_sim = simular_cenario(jogos, 500)
+    if st.button("▶️ Simular Estratégia"):
+        st.session_state.resultado_sim = simular_cenario(
+            st.session_state.jogos, 500
+        )
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
@@ -169,70 +111,35 @@ if st.session_state.analise_pronta:
         c3.metric("⭐ ≥4", r["acima_4"])
         c4.metric("❌ Zeros", r["zeros"])
 
-    # =============================
-    # RANKING GERAL (ROBUSTO)
-    # =============================
-    st.divider()
-    st.subheader("🏆 Ranking Geral")
+# ---------------- EVOLUÇÃO ----------------
+st.divider()
+st.subheader("📈 Minha Evolução")
 
-    rg = gerar_ranking()
+dados = listar_analises_usuario(st.session_state.usuario)
 
-    if rg:
-        df = pd.DataFrame(rg)
+if len(dados) >= 2:
+    df = pd.DataFrame(dados)
+    df["ordem"] = range(1, len(df) + 1)
+    df["media_movel"] = df["pontos"].rolling(3).mean()
 
-        # normalização de nomes
-        rename_map = {
-            "media_pontos": "media",
-            "media": "media",
-            "total_analises": "analises",
-            "analises": "analises",
-            "max_pontos": "maximo",
-            "maximo": "maximo",
-        }
-        df = df.rename(columns=rename_map)
+    fig = px.line(
+        df,
+        x="ordem",
+        y=["pontos", "media_movel"],
+        markers=True,
+        labels={"value": "Pontos", "ordem": "Análises"},
+        title="Evolução de Pontos (com média móvel)"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("Faça mais análises para visualizar sua evolução.")
 
-        if "media" in df.columns:
-            df = df.sort_values("media", ascending=False)
-
-        df["Posição"] = range(1, len(df) + 1)
-        df["Medalha"] = df["Posição"].map({1: "🥇", 2: "🥈", 3: "🥉"}).fillna("")
-
-        def destaque(row):
-            if row.get("usuario") == st.session_state.usuario:
-                return ["background-color:#e8f8f5"] * len(row)
-            return [""] * len(row)
-
-        cols = [c for c in ["Medalha", "usuario", "media", "analises", "maximo"] if c in df.columns]
-
-        st.dataframe(
-            df[cols].style.apply(destaque, axis=1),
-            use_container_width=True,
-            hide_index=True
-        )
-
-        if "media" in df.columns:
-            st.subheader("📈 Distribuição de Médias")
-            st.bar_chart(df.set_index("usuario")["media"])
-
-    else:
-        st.info("Ainda não há dados suficientes para o ranking.")
-
-# =============================
-# RODAPÉ
-# =============================
+# ---------------- RODAPÉ ----------------
 st.markdown(
-    "<hr>"
-    "<div style='text-align:center;color:gray;font-size:14px;line-height:1.6;'>"
+    "<hr><div style='text-align:center;color:gray;font-size:14px;'>"
     "<strong>⚠️ Aviso Legal</strong><br>"
     "Ferramenta educacional e estatística. "
-    "Não garante ganhos nem oferece previsões.<br>"
-    "Este aplicativo <strong>não possui vínculo</strong>, "
-    "<strong>não é afiliado</strong> e "
-    "<strong>não tem qualquer relação</strong> "
-    "com a Caixa Econômica Federal ou com loterias oficiais."
+    "Não possui vínculo com a Caixa ou loterias oficiais."
     "</div>",
     unsafe_allow_html=True
 )
-
-
-
