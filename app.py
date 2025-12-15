@@ -1,6 +1,14 @@
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+
 from engine import processar_fechamento, gerar_jogos
-from historico import registrar_analise, carregar_historico, gerar_ranking
+from historico import (
+    registrar_analise,
+    carregar_historico,
+    gerar_ranking,
+    gerar_ranking_por_usuario
+)
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
 
@@ -14,46 +22,74 @@ st.set_page_config(
 )
 
 # =============================
-# LOGIN SIMPLES
+# ESTADO GLOBAL
 # =============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
+if "usuario" not in st.session_state:
+    st.session_state.usuario = ""
+
+if "tema" not in st.session_state:
+    st.session_state.tema = "Claro"
+
+# =============================
+# LOGIN
+# =============================
 if not st.session_state.logado:
-    st.title("🔐 Acesso ao Núcleo 21")
+    st.title("🔐 Núcleo 21 — Login")
 
     usuario = st.text_input("Usuário")
     senha = st.text_input("Senha", type="password")
 
     if st.button("Entrar"):
-        if usuario == "admin" and senha == "123":
+        if usuario and senha:
             st.session_state.logado = True
+            st.session_state.usuario = usuario
             st.rerun()
         else:
-            st.error("Usuário ou senha inválidos")
+            st.error("Informe usuário e senha")
 
     st.stop()
-
-# =============================
-# APP
-# =============================
-st.title("🍀 Núcleo 21")
-st.caption("Análise estatística educacional · Sem promessas de ganho")
-
-st.warning(
-    "Ferramenta educacional. Não garante ganhos "
-    "e não interfere na aleatoriedade oficial."
-)
 
 # =============================
 # SIDEBAR
 # =============================
 with st.sidebar:
     st.header("⚙️ Configurações")
+
+    st.session_state.tema = st.radio(
+        "Tema",
+        ["Claro", "Escuro"],
+        index=0 if st.session_state.tema == "Claro" else 1
+    )
+
     fechamento_nome = st.selectbox(
-        "Escolha o fechamento",
+        "Fechamento",
         list(FECHAMENTOS.keys())
     )
+
+    st.divider()
+    st.write(f"👤 Usuário: **{st.session_state.usuario}**")
+
+# =============================
+# ESTILO (CLARO / ESCURO)
+# =============================
+if st.session_state.tema == "Escuro":
+    st.markdown(
+        """
+        <style>
+        body { background-color: #0e1117; color: #fafafa; }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# =============================
+# APP
+# =============================
+st.title("🍀 Núcleo 21")
+st.caption("Ferramenta educacional · Análise estatística")
 
 # =============================
 # ENTRADA
@@ -67,7 +103,7 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     resultado = converter_lista(resultado_text)
 
     if len(resultado) != 6:
-        st.error("Informe exatamente 6 dezenas válidas.")
+        st.error("Digite exatamente 6 dezenas válidas.")
         st.stop()
 
     pool = list(range(1, 61))
@@ -75,11 +111,13 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
 
     linhas, melhor = processar_fechamento(pool, resultado, fechamento)
 
-    registrar_analise(resultado, melhor["pontos"], melhor["numeros"])
+    registrar_analise(
+        st.session_state.usuario,
+        resultado,
+        melhor["pontos"],
+        melhor["numeros"]
+    )
 
-    # =============================
-    # RESULTADOS
-    # =============================
     st.subheader("🏆 Melhor Linha")
     st.success(f"{sorted(melhor['numeros'])} — {melhor['pontos']} pontos")
 
@@ -88,30 +126,40 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         st.write(jogo)
 
 # =============================
-# RANKING
+# RANKINGS
 # =============================
 st.divider()
-st.subheader("🏆 Ranking Geral")
+col1, col2 = st.columns(2)
 
-ranking = gerar_ranking()
-
-if not ranking:
-    st.info("Nenhuma análise registrada ainda.")
-else:
+with col1:
+    st.subheader("🏆 Ranking Geral")
+    ranking = gerar_ranking()
     for i, r in enumerate(ranking, 1):
-        st.write(f"{i}º — {r['score']} pontos — {r['data']}")
+        st.write(f"{i}º — {r['score']} pts — {r['usuario']}")
+
+with col2:
+    st.subheader("👤 Meu Ranking")
+    ranking_user = gerar_ranking_por_usuario(st.session_state.usuario)
+    for i, r in enumerate(ranking_user, 1):
+        st.write(f"{i}º — {r['score']} pts — {r['data']}")
 
 # =============================
-# HISTÓRICO
+# ESTATÍSTICAS (GRÁFICOS)
 # =============================
 st.divider()
-st.subheader("📜 Histórico Recente")
+st.subheader("📊 Estatísticas")
 
 historico = carregar_historico()
 
-for h in reversed(historico[-5:]):
-    st.write(
-        f"📅 {h['data']} | "
-        f"🎯 {h['score']} pontos | "
-        f"📊 {sorted(h['melhor_linha'])}"
-    )
+if historico:
+    df = pd.DataFrame(historico)
+
+    fig, ax = plt.subplots()
+    df["score"].value_counts().sort_index().plot(kind="bar", ax=ax)
+    ax.set_xlabel("Pontos")
+    ax.set_ylabel("Frequência")
+    ax.set_title("Distribuição de Pontos")
+
+    st.pyplot(fig)
+else:
+    st.info("Ainda não há dados suficientes para estatísticas.")
