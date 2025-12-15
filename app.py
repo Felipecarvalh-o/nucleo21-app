@@ -185,16 +185,24 @@ if st.session_state.analise_pronta:
                 unsafe_allow_html=True
             )
 
+    # ---------------- SIMULAÇÃO ----------------
     st.subheader("🧪 Simulação Estatística")
+
+    TOTAL_SORTEIOS = 500
+
     if st.button("▶️ Simular Estratégia"):
         st.session_state.resultado_sim = simular_cenario(
-            st.session_state.jogos, 500
+            st.session_state.jogos, TOTAL_SORTEIOS
         )
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
-        st.metric("📊 Média", r["media"])
-        st.metric("🏆 Máximo", r["maximo"])
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("📊 Média", r.get("media", 0))
+        c2.metric("🏆 Máximo", r.get("maximo", 0))
+        c3.metric("❌ Zeros", r.get("zeros", 0))
+        c4.metric("🔢 Sorteios", TOTAL_SORTEIOS)
 
 # ---------------- RANKING ----------------
 st.divider()
