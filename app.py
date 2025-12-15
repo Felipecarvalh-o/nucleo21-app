@@ -23,26 +23,17 @@ st.set_page_config(
 # =============================
 # ESTADOS
 # =============================
-if "logado" not in st.session_state:
-    st.session_state.logado = False
-
-if "usuario" not in st.session_state:
-    st.session_state.usuario = ""
-
-if "aceitou_termos" not in st.session_state:
-    st.session_state.aceitou_termos = False
-
-if "analise_pronta" not in st.session_state:
-    st.session_state.analise_pronta = False
-
-if "melhor" not in st.session_state:
-    st.session_state.melhor = None
-
-if "jogos" not in st.session_state:
-    st.session_state.jogos = []
-
-if "resultado_sim" not in st.session_state:
-    st.session_state.resultado_sim = None
+for k, v in {
+    "logado": False,
+    "usuario": "",
+    "aceitou_termos": False,
+    "analise_pronta": False,
+    "melhor": None,
+    "jogos": [],
+    "resultado_sim": None,
+}.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 # =============================
 # LOGIN
@@ -98,10 +89,7 @@ if not st.session_state.aceitou_termos:
 # =============================
 with st.sidebar:
     st.header("⚙️ Configurações")
-    fechamento_nome = st.selectbox(
-        "Fechamento",
-        list(FECHAMENTOS.keys())
-    )
+    fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys())))
     st.divider()
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
 
@@ -126,7 +114,7 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     pool = list(range(1, 61))
     fechamento = FECHAMENTOS[fechamento_nome]
 
-    linhas, melhor = processar_fechamento(pool, resultado, fechamento)
+    _, melhor = processar_fechamento(pool, resultado, fechamento)
 
     registrar_analise(
         st.session_state.usuario,
@@ -192,33 +180,52 @@ if st.session_state.analise_pronta:
         st.metric("⭐ ≥4", r["acima_4"])
 
     # =============================
-    # RANKINGS
+    # RANKING GERAL
     # =============================
     st.divider()
-    st.subheader("🏆 Rankings")
+    st.subheader("🏆 Ranking Geral")
 
-    st.markdown("### 🌍 Ranking Geral")
+    rg = gerar_ranking()
+    if rg:
+        df = pd.DataFrame(rg).sort_values("media", ascending=False)
 
-rg = gerar_ranking()
+        df["Posição"] = range(1, len(df) + 1)
+        df["Medalha"] = df["Posição"].map({1: "🥇", 2: "🥈", 3: "🥉"}).fillna("")
 
-if not rg:
-    st.info("Ainda não há dados suficientes para o ranking geral.")
-else:
-    df_rg = pd.DataFrame(rg)
-    st.dataframe(df_rg, use_container_width=True, hide_index=True)
+        def destaque(row):
+            if row["usuario"] == st.session_state.usuario:
+                return ["background-color:#e8f8f5"] * len(row)
+            return [""] * len(row)
 
+        st.dataframe(
+            df[["Medalha", "usuario", "media", "analises", "maximo"]]
+            .style.apply(destaque, axis=1),
+            use_container_width=True,
+            hide_index=True
+        )
 
-  st.markdown("### 👤 Meu Desempenho")
+        # Gráfico automático
+        st.subheader("📈 Distribuição de Médias")
+        st.bar_chart(df.set_index("usuario")["media"])
 
-ru = gerar_ranking_por_usuario(st.session_state.usuario)
+    else:
+        st.info("Ainda não há dados suficientes para o ranking.")
 
-if not ru:
-    st.info("Você ainda não possui análises suficientes.")
-else:
-    df_ru = pd.DataFrame(ru)
-    st.dataframe(df_ru, use_container_width=True, hide_index=True)
+    # =============================
+    # MEU DESEMPENHO
+    # =============================
+    st.subheader("👤 Meu Desempenho")
 
+    ru = gerar_ranking_por_usuario(st.session_state.usuario)
+    if ru:
+        dfu = pd.DataFrame(ru).sort_values("media", ascending=False)
+        st.dataframe(dfu, use_container_width=True, hide_index=True)
 
+        st.subheader("📊 Minha Evolução")
+        st.line_chart(dfu["media"])
+
+    else:
+        st.info("Você ainda não possui análises suficientes.")
 
 # =============================
 # RODAPÉ
@@ -230,5 +237,3 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
-
-
