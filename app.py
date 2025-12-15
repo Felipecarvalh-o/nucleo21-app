@@ -6,7 +6,6 @@ from engine import processar_fechamento, gerar_jogos
 from historico import (
     registrar_analise,
     gerar_ranking,
-    gerar_ranking_por_usuario,
     listar_analises_usuario,
     resumo_por_estrategia
 )
@@ -50,28 +49,23 @@ ESTRATEGIAS = {
         "label": "🟢 Núcleo Inteligente™",
         "descricao": (
             "Estratégia analítica adaptativa. "
-            "Seleciona a melhor linha do fechamento com base em desempenho "
-            "e gera jogos otimizados com simulação estatística."
+            "Seleciona a melhor linha do fechamento com base em desempenho."
         )
     },
     "matriz": {
         "label": "🔵 Matriz de Cobertura™",
         "descricao": (
-            "Estratégia clássica de fechamento matricial. "
-            "Foco em cobertura matemática e organização das apostas."
+            "Estratégia clássica de fechamento matricial."
         )
     }
 }
 
 # ---------------- ESTADO ----------------
-for k, v in {
-    "logado": False,
-    "usuario": "",
-    "analise_pronta": False,
-    "resultado_sim": None,
-    "estrategia": "nucleo"   # 🔥 estado global
-}.items():
-    st.session_state.setdefault(k, v)
+st.session_state.setdefault("logado", False)
+st.session_state.setdefault("usuario", "")
+st.session_state.setdefault("analise_pronta", False)
+st.session_state.setdefault("resultado_sim", None)
+st.session_state.setdefault("estrategia", "nucleo")
 
 # ---------------- LOGIN ----------------
 if not st.session_state.logado:
@@ -91,24 +85,18 @@ if not st.session_state.logado:
 with st.sidebar:
     st.header("⚙️ Configurações")
 
-    st.caption(
-        "🪜 **Passo a passo**  \n"
-        "1️⃣ Escolha a estratégia  \n"
-        "2️⃣ Informe o resultado  \n"
-        "3️⃣ Gere e utilize os jogos"
-    )
-
     fechamento_nome = st.selectbox(
         "Fechamento", list(FECHAMENTOS.keys())
     )
 
-    # seletor sincronizado
-    st.selectbox(
+    estrategia_sb = st.selectbox(
         "🧠 Estratégia",
         list(ESTRATEGIAS.keys()),
-        format_func=lambda k: ESTRATEGIAS[k]["label"],
-        key="estrategia"
+        index=list(ESTRATEGIAS.keys()).index(st.session_state.estrategia),
+        format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
+
+    st.session_state.estrategia = estrategia_sb
 
     st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
     st.write(f"👤 **{st.session_state.usuario}**")
@@ -116,15 +104,18 @@ with st.sidebar:
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
 
-# 🔥 seletor visível no mobile
+# -------- SELETOR MOBILE --------
 st.subheader("🧠 Estratégia de Jogo")
-st.radio(
+
+estrategia_mobile = st.radio(
     "Escolha a estratégia",
     options=list(ESTRATEGIAS.keys()),
+    index=list(ESTRATEGIAS.keys()).index(st.session_state.estrategia),
     format_func=lambda k: ESTRATEGIAS[k]["label"],
-    key="estrategia",
     horizontal=True
 )
+
+st.session_state.estrategia = estrategia_mobile
 
 st.warning(
     "⚠️ Sistema educacional e estatístico. "
@@ -136,6 +127,7 @@ resultado_txt = st.text_input(
     placeholder="01 02 03 04 05 06"
 )
 
+# ---------------- ANÁLISE ----------------
 if st.button("🔍 Analisar"):
     resultado = converter_lista(resultado_txt)
     if len(resultado) != 6:
@@ -154,11 +146,12 @@ if st.button("🔍 Analisar"):
             resultado,
             melhor["pontos"],
             melhor["numeros"],
-            st.session_state.estrategia
+            "nucleo"
         )
 
         st.session_state.melhor = melhor
         st.session_state.jogos = gerar_jogos(melhor["numeros"])
+
     else:
         import random
         nums = list(range(1, 61))
@@ -175,28 +168,23 @@ if st.session_state.analise_pronta:
     st.subheader("🎯 Resultado da Estratégia")
 
     if st.session_state.estrategia == "nucleo":
-        st.subheader("🏆 Linha Base Selecionada")
         cols = st.columns(6)
         for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
             c.markdown(
-                f"<div class='numero-verde'>{str(n).zfill(2)}</div>",
+                f"<div class='numero-verde'>{n:02d}</div>",
                 unsafe_allow_html=True
             )
-        st.caption(f"Pontuação obtida: **{st.session_state.melhor['pontos']}**")
 
     st.subheader("🎲 Jogos Gerados")
-    for i, jogo in enumerate(st.session_state.jogos, 1):
+    for jogo in st.session_state.jogos:
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
             c.markdown(
-                f"<div class='numero-azul'>{str(n).zfill(2)}</div>",
+                f"<div class='numero-azul'>{n:02d}</div>",
                 unsafe_allow_html=True
             )
-        st.caption(f"Jogo {i}")
 
-    # ---------------- SIMULAÇÃO ----------------
     st.subheader("🧪 Simulação Estatística")
-
     if st.button("▶️ Simular Estratégia"):
         st.session_state.resultado_sim = simular_cenario(
             st.session_state.jogos, 500
@@ -204,11 +192,8 @@ if st.session_state.analise_pronta:
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("📊 Média", r["media"])
-        c2.metric("🏆 Máximo", r["maximo"])
-        c3.metric("⭐ ≥4", r["acima_4"])
-        c4.metric("❌ Zeros", r["zeros"])
+        st.metric("📊 Média", r["media"])
+        st.metric("🏆 Máximo", r["maximo"])
 
 # ---------------- RANKING ----------------
 st.divider()
@@ -225,8 +210,7 @@ else:
 st.markdown(
     "<hr><div style='text-align:center;color:#777;font-size:13px;'>"
     "<strong>⚠️ Aviso Legal</strong><br>"
-    "Ferramenta educacional e estatística. "
-    "Sem vínculo com a Caixa ou loterias oficiais."
+    "Ferramenta educacional e estatística."
     "</div>",
     unsafe_allow_html=True
 )
