@@ -1,7 +1,8 @@
 import streamlit as st
 from utils import converter_lista, validar_pool
 from fechamentos import FECHAMENTOS
-from engine import processar_fechamento, gerar_jogos
+from engine import analisar_e_salvar
+from historico import carregar_historico, ranking_jogos
 
 # ---------------- CONFIGURAÇÃO DA PÁGINA ----------------
 st.set_page_config(
@@ -26,10 +27,6 @@ st.markdown("""
 h1 {
     font-weight: 800;
     letter-spacing: -0.03em;
-}
-
-h3 {
-    margin-top: 2rem;
 }
 
 textarea, input, select {
@@ -114,10 +111,11 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         st.error("Digite pelo menos 6 dezenas no resultado.")
         st.stop()
 
-    linhas, melhor = processar_fechamento(
+    linhas, melhor, jogos = analisar_e_salvar(
         pool,
         resultado,
-        FECHAMENTOS[fechamento_nome]
+        FECHAMENTOS[fechamento_nome],
+        fechamento_nome
     )
 
     st.divider()
@@ -137,8 +135,39 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         f"com **{melhor['pontos']} pontos**"
     )
 
-    jogos = gerar_jogos(melhor["numeros"])
-
     st.subheader("🎯 Combinações Geradas (6 dezenas)")
     for i, jogo in enumerate(jogos, 1):
         st.write(f"🎟️ Jogo {i}: {jogo}")
+
+# ---------------- HISTÓRICO ----------------
+st.divider()
+st.subheader("📚 Histórico de Análises")
+
+historico = carregar_historico()
+
+if historico:
+    for h in historico[-5:][::-1]:
+        st.write(
+            f"🕒 {h['data']} | "
+            f"Fechamento: {h['fechamento']} | "
+            f"Melhor Linha: {h['melhor_linha']} | "
+            f"Pontos: {h['pontos']}"
+        )
+else:
+    st.info("Nenhuma análise registrada ainda.")
+
+# ---------------- RANKING ----------------
+st.divider()
+st.subheader("🏆 Ranking Estatístico de Jogos")
+
+ranking = ranking_jogos()
+
+if ranking:
+    for i, (jogo, media, vezes) in enumerate(ranking[:5], 1):
+        st.write(
+            f"{i}️⃣ 🎟️ {jogo} — "
+            f"Média: **{media:.2f} pontos** | "
+            f"Aparições: {vezes}"
+        )
+else:
+    st.info("Ranking será exibido após mais análises.")
