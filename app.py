@@ -221,10 +221,18 @@ if st.session_state.analise_pronta:
 # RODAPÉ
 # =============================
 st.markdown(
-    "<hr><div style='text-align:center;color:gray;font-size:14px;'>"
-    "⚠️ Ferramenta educacional e estatística. "
-    "Não garante ganhos nem previsões."
+    "<hr>"
+    "<div style='text-align:center;color:gray;font-size:14px;line-height:1.6;'>"
+    "<strong>⚠️ Aviso Legal</strong><br>"
+    "Ferramenta educacional e estatística. "
+    "Não garante ganhos nem oferece previsões.<br>"
+    "Este aplicativo <strong>não possui vínculo</strong>, "
+    "<strong>não é afiliado</strong> e "
+    "<strong>não tem qualquer relação</strong> "
+    "com a Caixa Econômica Federal ou com loterias oficiais."
     "</div>",
     unsafe_allow_html=True
 )
+
+
 
