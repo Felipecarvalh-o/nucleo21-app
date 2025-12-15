@@ -7,7 +7,8 @@ from historico import (
     registrar_analise,
     gerar_ranking,
     gerar_ranking_por_usuario,
-    listar_analises_usuario
+    listar_analises_usuario,
+    resumo_por_estrategia
 )
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
@@ -61,10 +62,12 @@ if not st.session_state.logado:
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.header("⚙️ Configurações")
-    
-    # Adicionando Passo a Passo
+
     st.caption(
-        "🪜 **Passo a passo:** 1️⃣ Escolha a estratégia | 2️⃣ Informe o resultado | 3️⃣ Gere e utilize os jogos"
+        "🪜 **Passo a passo:** "
+        "1️⃣ Escolha a estratégia | "
+        "2️⃣ Informe o resultado | "
+        "3️⃣ Gere e utilize os jogos"
     )
 
     fechamento_nome = st.selectbox(
@@ -77,14 +80,12 @@ with st.sidebar:
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
 
-    # Adicionando descrição da estratégia
     st.info(ESTRATEGIAS[estrategia_key]["descricao"])
     st.write(f"👤 {st.session_state.usuario}")
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
 
-# Disclaimer visível
 st.warning(
     "⚠️ Este sistema não prevê resultados nem garante prêmios. "
     "Ele organiza estratégias para quem prefere jogar com método."
@@ -113,7 +114,8 @@ if st.button("🔍 ANALISAR"):
             fechamento_nome,
             resultado,
             melhor["pontos"],
-            melhor["numeros"]
+            melhor["numeros"],
+            estrategia_key
         )
 
         st.session_state.melhor = melhor
@@ -123,7 +125,6 @@ if st.button("🔍 ANALISAR"):
 
     # -------- MATRIZ DE COBERTURA --------
     else:
-        # Embalando a Matriz de Cobertura para ficar mais interessante
         import random
         numeros = list(range(1, 61))
         random.shuffle(numeros)
@@ -140,7 +141,6 @@ if st.button("🔍 ANALISAR"):
 if st.session_state.analise_pronta:
     st.subheader("🎯 Resultado da Estratégia")
 
-    # Núcleo Inteligente
     if estrategia_key == "nucleo":
         st.subheader("🏆 Melhor Linha Selecionada")
         cols = st.columns(6)
@@ -154,7 +154,6 @@ if st.session_state.analise_pronta:
             )
         st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
 
-    # Jogos gerados (comum às duas)
     st.subheader("🎲 Jogos Gerados")
     for i, jogo in enumerate(st.session_state.jogos, 1):
         cols = st.columns(6)
@@ -182,11 +181,40 @@ if st.session_state.analise_pronta:
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
+
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("📊 Média", r["media"])
         c2.metric("🏆 Máximo", r["maximo"])
         c3.metric("⭐ ≥4", r["acima_4"])
         c4.metric("❌ Zeros", r["zeros"])
+
+        # -------- COMPARATIVO --------
+        st.subheader("📊 Comparativo Pessoal por Estratégia")
+
+        resumo = resumo_por_estrategia(st.session_state.usuario)
+
+        if resumo:
+            df_resumo = pd.DataFrame(resumo)
+
+            mapa = {
+                "nucleo": "🟢 Núcleo Inteligente™",
+                "matriz": "🔵 Matriz de Cobertura™"
+            }
+            df_resumo["estrategia"] = df_resumo["estrategia"].map(mapa)
+
+            st.dataframe(df_resumo, use_container_width=True, hide_index=True)
+
+            melhor_est = df_resumo.sort_values("media", ascending=False).iloc[0]
+
+            st.success(
+                f"📌 Com base nas suas análises, "
+                f"**{melhor_est['estrategia']}** "
+                f"tem apresentado melhor desempenho médio para você."
+            )
+        else:
+            st.info(
+                "Ainda não há dados suficientes para comparar estratégias."
+            )
 
 # ---------------- EVOLUÇÃO ----------------
 st.divider()
@@ -221,7 +249,6 @@ ranking = gerar_ranking()
 if ranking:
     df_rank = pd.DataFrame(ranking)
     df_rank = df_rank.sort_values("media", ascending=False)
-
     st.dataframe(df_rank, use_container_width=True, hide_index=True)
 else:
     st.info("Ainda não há dados suficientes para gerar o ranking.")
