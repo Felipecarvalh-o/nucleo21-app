@@ -21,16 +21,13 @@ st.set_page_config(
 )
 
 # =============================
-# ESTADO GLOBAL
+# ESTADO
 # =============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if "usuario" not in st.session_state:
     st.session_state.usuario = ""
-
-if "tema" not in st.session_state:
-    st.session_state.tema = "Claro"
 
 # =============================
 # LOGIN
@@ -57,12 +54,6 @@ if not st.session_state.logado:
 with st.sidebar:
     st.header("⚙️ Configurações")
 
-    st.session_state.tema = st.radio(
-        "Tema",
-        ["Claro", "Escuro"],
-        index=0 if st.session_state.tema == "Claro" else 1
-    )
-
     fechamento_nome = st.selectbox(
         "Fechamento",
         list(FECHAMENTOS.keys())
@@ -70,19 +61,6 @@ with st.sidebar:
 
     st.divider()
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
-
-# =============================
-# ESTILO ESCURO
-# =============================
-if st.session_state.tema == "Escuro":
-    st.markdown(
-        """
-        <style>
-        body { background-color: #0e1117; color: #fafafa; }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
 
 # =============================
 # APP
@@ -112,6 +90,7 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
 
     registrar_analise(
         st.session_state.usuario,
+        fechamento_nome,
         resultado,
         melhor["pontos"],
         melhor["numeros"]
@@ -123,6 +102,38 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     st.subheader("🎟️ Sugestões de Jogos")
     for jogo in gerar_jogos(melhor["numeros"]):
         st.write(jogo)
+
+# =============================
+# AJUSTE DE ESTRATÉGIA (INTELIGENTE)
+# =============================
+st.divider()
+st.subheader("🧠 Seu Padrão de Resultados")
+
+historico = carregar_historico()
+user_data = [h for h in historico if h["usuario"] == st.session_state.usuario]
+
+if len(user_data) >= 3:
+    df = pd.DataFrame(user_data)
+
+    media = round(df["score"].mean(), 2)
+
+    melhor_fechamento = (
+        df.groupby("fechamento")["score"]
+        .mean()
+        .sort_values(ascending=False)
+        .index[0]
+    )
+
+    st.info(
+        f"📊 Sua média de pontos é **{media}**.\n\n"
+        f"⭐ Você costuma ter melhores resultados com o "
+        f"**Fechamento {melhor_fechamento}**."
+    )
+else:
+    st.info(
+        "ℹ️ Faça pelo menos **3 análises** para que eu consiga "
+        "identificar seus padrões."
+    )
 
 # =============================
 # RANKINGS
@@ -141,23 +152,3 @@ with col2:
     ranking_user = gerar_ranking_por_usuario(st.session_state.usuario)
     for i, r in enumerate(ranking_user, 1):
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
-
-# =============================
-# ESTATÍSTICAS (SEM MATPLOTLIB)
-# =============================
-st.divider()
-st.subheader("📊 Estatísticas")
-
-historico = carregar_historico()
-
-if historico:
-    df = pd.DataFrame(historico)
-
-    st.metric("📈 Total de análises", len(df))
-    st.metric("🏆 Melhor pontuação", df["score"].max())
-    st.metric("📊 Média de pontos", round(df["score"].mean(), 2))
-
-    st.subheader("Distribuição de Pontos")
-    st.bar_chart(df["score"].value_counts().sort_index())
-else:
-    st.info("Ainda não há dados suficientes para estatísticas.")
