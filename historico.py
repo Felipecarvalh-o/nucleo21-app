@@ -21,10 +21,11 @@ def salvar_historico(historico):
         json.dump(historico, f, indent=2, ensure_ascii=False)
 
 
-def registrar_analise(resultado, pontos, melhor_linha):
+def registrar_analise(usuario, resultado, pontos, melhor_linha):
     historico = carregar_historico()
 
     historico.append({
+        "usuario": usuario,
         "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resultado": resultado,
         "score": pontos,
@@ -37,4 +38,11 @@ def registrar_analise(resultado, pontos, melhor_linha):
 def gerar_ranking(top=5):
     historico = carregar_historico()
     ordenado = sorted(historico, key=lambda x: x["score"], reverse=True)
+    return ordenado[:top]
+
+
+def gerar_ranking_por_usuario(usuario, top=5):
+    historico = carregar_historico()
+    filtrado = [h for h in historico if h["usuario"] == usuario]
+    ordenado = sorted(filtrado, key=lambda x: x["score"], reverse=True)
     return ordenado[:top]
