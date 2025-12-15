@@ -21,11 +21,12 @@ def salvar_historico(historico):
         json.dump(historico, f, indent=2, ensure_ascii=False)
 
 
-def registrar_analise(usuario, resultado, pontos, melhor_linha):
+def registrar_analise(usuario, fechamento, resultado, pontos, melhor_linha):
     historico = carregar_historico()
 
     historico.append({
         "usuario": usuario,
+        "fechamento": fechamento,
         "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resultado": resultado,
         "score": pontos,
