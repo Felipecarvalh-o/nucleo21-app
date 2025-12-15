@@ -22,13 +22,16 @@ st.set_page_config(
 )
 
 # =============================
-# ESTADO GLOBAL
+# ESTADOS GLOBAIS
 # =============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if "usuario" not in st.session_state:
     st.session_state.usuario = ""
+
+if "aceitou_termos" not in st.session_state:
+    st.session_state.aceitou_termos = False
 
 if "analise_pronta" not in st.session_state:
     st.session_state.analise_pronta = False
@@ -62,6 +65,43 @@ if not st.session_state.logado:
     st.stop()
 
 # =============================
+# ACEITE DE TERMOS (OBRIGATÓRIO)
+# =============================
+if not st.session_state.aceitou_termos:
+    st.title("📄 Termos de Uso e Política de Privacidade")
+
+    st.markdown(
+        """
+        ### ⚠️ Aviso Importante
+
+        O **Núcleo 21** é uma ferramenta **exclusivamente educacional e estatística**.
+
+        - Não garante ganhos  
+        - Não oferece previsões  
+        - Não interfere em sorteios oficiais  
+        - Jogos de loteria são baseados em **aleatoriedade**
+
+        Ao continuar, você declara que:
+        - leu e compreendeu os Termos de Uso
+        - está ciente dos riscos envolvidos
+        - utiliza o sistema por sua conta e risco
+        """
+    )
+
+    concordo = st.checkbox(
+        "✅ Li e concordo com os Termos de Uso e a Política de Privacidade"
+    )
+
+    if st.button("Continuar"):
+        if concordo:
+            st.session_state.aceitou_termos = True
+            st.rerun()
+        else:
+            st.error("Você precisa concordar para continuar.")
+
+    st.stop()
+
+# =============================
 # SIDEBAR
 # =============================
 with st.sidebar:
@@ -76,16 +116,14 @@ with st.sidebar:
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
 
 # =============================
-# APP
+# APP PRINCIPAL
 # =============================
 st.title("🍀 Núcleo 21")
 st.caption("Ferramenta educacional · Análise estatística")
 
 st.warning(
-    "⚠️ **AVISO IMPORTANTE**\n\n"
-    "Este aplicativo possui finalidade exclusivamente educacional e estatística. "
-    "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais. "
-    "Jogos de loteria são baseados em aleatoriedade."
+    "⚠️ Este aplicativo possui finalidade exclusivamente educacional e estatística. "
+    "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais."
 )
 
 # =============================
@@ -128,7 +166,6 @@ if st.session_state.analise_pronta:
     melhor = st.session_state.melhor
     jogos = st.session_state.jogos
 
-    # Melhor linha
     st.subheader("🏆 Melhor Linha")
 
     cols = st.columns(6)
@@ -142,7 +179,6 @@ if st.session_state.analise_pronta:
 
     st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
 
-    # Sugestões
     st.subheader("🎟️ Sugestões de Jogos")
 
     for jogo in jogos:
@@ -161,10 +197,6 @@ if st.session_state.analise_pronta:
     # =============================
     st.divider()
     st.subheader("🧪 Simulação de Cenários (Educacional)")
-    st.caption(
-        "Simulação com sorteios aleatórios para fins educacionais. "
-        "Não representa previsões nem garante resultados."
-    )
 
     if st.button("▶️ Simular Estratégia", use_container_width=True):
         st.session_state.resultado_sim = simular_cenario(jogos, simulacoes=500)
@@ -180,85 +212,16 @@ if st.session_state.analise_pronta:
             st.metric("❌ Vezes que Zerou", r["zeros"])
             st.metric("⭐ Pontuações ≥ 4", r["acima_4"])
 
-        st.info(
-            "🔍 Interpretação correta:\n\n"
-            "• Média indica comportamento ao longo do tempo\n"
-            "• Zerar faz parte da aleatoriedade\n"
-            "• Pontuações altas são raras\n\n"
-            "Esta simulação não prevê resultados futuros."
-        )
-
 # =============================
-# AJUSTE DE ESTRATÉGIA
-# =============================
-st.divider()
-st.subheader("🧠 Seu Padrão de Resultados")
-
-historico = carregar_historico()
-user_data = [h for h in historico if h["usuario"] == st.session_state.usuario]
-
-if len(user_data) >= 3:
-    df = pd.DataFrame(user_data)
-
-    media = round(df["score"].mean(), 2)
-    melhor_fechamento = (
-        df.groupby("fechamento")["score"]
-        .mean()
-        .sort_values(ascending=False)
-        .index[0]
-    )
-
-    st.info(
-        f"📊 Sua média de pontos é **{media}**.\n\n"
-        f"⭐ Você costuma ter melhores resultados com o "
-        f"**Fechamento {melhor_fechamento}**."
-    )
-else:
-    st.info("ℹ️ Faça pelo menos 3 análises para identificar padrões.")
-
-# =============================
-# EVOLUÇÃO
-# =============================
-st.divider()
-st.subheader("📈 Sua Evolução ao Longo do Tempo")
-
-if len(user_data) >= 3:
-    df = pd.DataFrame(user_data)
-    df["ordem"] = range(1, len(df) + 1)
-    st.line_chart(df, x="ordem", y="score")
-else:
-    st.info("ℹ️ A evolução aparece após 3 análises.")
-
-# =============================
-# RANKINGS
-# =============================
-st.divider()
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("🏆 Ranking Geral")
-    for i, r in enumerate(gerar_ranking(), 1):
-        st.write(f"{i}º — {r['score']} pts — {r['usuario']}")
-
-with col2:
-    st.subheader("👤 Meu Ranking")
-    for i, r in enumerate(
-        gerar_ranking_por_usuario(st.session_state.usuario), 1
-    ):
-        st.write(f"{i}º — {r['score']} pts — {r['data']}")
-
-# =============================
-# RODAPÉ LEGAL
+# RODAPÉ
 # =============================
 st.markdown(
     "<hr style='margin-top:40px;'>"
     "<div style='text-align:center; font-size:14px; color:gray; line-height:1.8;'>"
     "<div style='font-size:22px;'>⚠️</div>"
     "<strong>Aviso Legal</strong><br>"
-    "Este aplicativo possui finalidade exclusivamente educacional e estatística.<br>"
-    "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais.<br>"
-    "Jogos de loteria são baseados em aleatoriedade.<br>"
-    "Utilize este sistema por sua conta e risco."
+    "Ferramenta educacional e estatística. "
+    "Não garante ganhos nem oferece previsões."
     "</div>",
     unsafe_allow_html=True
 )
