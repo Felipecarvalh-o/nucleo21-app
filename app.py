@@ -1,42 +1,85 @@
 import streamlit as st
-from engine import (
-    processar_fechamento,
-    gerar_jogos,
-    carregar_historico
-)
+from engine import processar_fechamento, gerar_jogos
+from historico import registrar_analise, carregar_historico, gerar_ranking
+from utils import converter_lista
+from fechamentos import FECHAMENTOS
 
+# =============================
+# CONFIGURAÇÃO
+# =============================
 st.set_page_config(
     page_title="Núcleo 21",
     page_icon="🍀",
     layout="centered"
 )
 
+# =============================
+# LOGIN SIMPLES
+# =============================
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+
+if not st.session_state.logado:
+    st.title("🔐 Acesso ao Núcleo 21")
+
+    usuario = st.text_input("Usuário")
+    senha = st.text_input("Senha", type="password")
+
+    if st.button("Entrar"):
+        if usuario == "admin" and senha == "123":
+            st.session_state.logado = True
+            st.rerun()
+        else:
+            st.error("Usuário ou senha inválidos")
+
+    st.stop()
+
+# =============================
+# APP
+# =============================
 st.title("🍀 Núcleo 21")
 st.caption("Análise estatística educacional · Sem promessas de ganho")
 
 st.warning(
-    "Esta ferramenta é apenas educacional e estatística. "
-    "Não garante ganhos e não interfere na aleatoriedade oficial da Mega-Sena."
+    "Ferramenta educacional. Não garante ganhos "
+    "e não interfere na aleatoriedade oficial."
 )
 
-pool_text = st.text_area("Base de 60 dezenas (opcional)", placeholder="01 02 03 ... 60")
-resultado_text = st.text_input("Resultado do sorteio (6 dezenas)", placeholder="05 12 18 32 41 56")
+# =============================
+# SIDEBAR
+# =============================
+with st.sidebar:
+    st.header("⚙️ Configurações")
+    fechamento_nome = st.selectbox(
+        "Escolha o fechamento",
+        list(FECHAMENTOS.keys())
+    )
+
+# =============================
+# ENTRADA
+# =============================
+resultado_text = st.text_input(
+    "Resultado do sorteio (6 dezenas)",
+    placeholder="05 12 18 32 41 56"
+)
 
 if st.button("🔍 ANALISAR AGORA", use_container_width=True):
-    pool = list(range(1, 61))
-    resultado = list(map(int, resultado_text.split()))
+    resultado = converter_lista(resultado_text)
 
-    fechamento = [
-        [1,2,3,4,5,6],
-        [7,8,9,10,11,12],
-        [13,14,15,16,17,18],
-        [19,20,21,22,23,24],
-        [25,26,27,28,29,30],
-        [31,32,33,34,35,36]
-    ]
+    if len(resultado) != 6:
+        st.error("Informe exatamente 6 dezenas válidas.")
+        st.stop()
+
+    pool = list(range(1, 61))
+    fechamento = FECHAMENTOS[fechamento_nome]
 
     linhas, melhor = processar_fechamento(pool, resultado, fechamento)
 
+    registrar_analise(resultado, melhor["pontos"], melhor["numeros"])
+
+    # =============================
+    # RESULTADOS
+    # =============================
     st.subheader("🏆 Melhor Linha")
     st.success(f"{sorted(melhor['numeros'])} — {melhor['pontos']} pontos")
 
@@ -44,18 +87,31 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     for jogo in gerar_jogos(melhor["numeros"]):
         st.write(jogo)
 
-# 🔽 HISTÓRICO 🔽
+# =============================
+# RANKING
+# =============================
 st.divider()
-st.subheader("📜 Histórico de Análises")
+st.subheader("🏆 Ranking Geral")
+
+ranking = gerar_ranking()
+
+if not ranking:
+    st.info("Nenhuma análise registrada ainda.")
+else:
+    for i, r in enumerate(ranking, 1):
+        st.write(f"{i}º — {r['score']} pontos — {r['data']}")
+
+# =============================
+# HISTÓRICO
+# =============================
+st.divider()
+st.subheader("📜 Histórico Recente")
 
 historico = carregar_historico()
 
-if not historico:
-    st.info("Nenhuma análise registrada ainda.")
-else:
-    for h in reversed(historico[-10:]):
-        st.write(
-            f"📅 {h['data']} | "
-            f"🎯 {h['pontos']} pontos | "
-            f"📊 {sorted(h['melhor_linha'])}"
-        )
+for h in reversed(historico[-5:]):
+    st.write(
+        f"📅 {h['data']} | "
+        f"🎯 {h['score']} pontos | "
+        f"📊 {sorted(h['melhor_linha'])}"
+    )
