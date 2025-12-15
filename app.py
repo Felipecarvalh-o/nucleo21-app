@@ -216,3 +216,24 @@ with col2:
         gerar_ranking_por_usuario(st.session_state.usuario), 1
     ):
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
+st.markdown(
+    """
+    <hr style="margin-top:40px; margin-bottom:10px;">
+
+    <div style="
+        text-align:center;
+        font-size:12px;
+        color:gray;
+        line-height:1.6;
+    ">
+        ⚠️ <strong>Aviso Legal:</strong><br>
+        Este aplicativo possui finalidade <strong>exclusivamente educacional e estatística</strong>.
+        Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais.
+        <br>
+        Jogos de loteria são baseados em <strong>aleatoriedade</strong>.
+        Utilize este sistema por sua conta e risco.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
