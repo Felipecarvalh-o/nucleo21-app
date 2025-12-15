@@ -89,7 +89,12 @@ if not st.session_state.aceitou_termos:
 # =============================
 with st.sidebar:
     st.header("⚙️ Configurações")
-    fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys())))
+
+    fechamento_nome = st.selectbox(
+        "Fechamento",
+        list(FECHAMENTOS.keys())
+    )
+
     st.divider()
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
 
@@ -186,6 +191,7 @@ if st.session_state.analise_pronta:
     st.subheader("🏆 Ranking Geral")
 
     rg = gerar_ranking()
+
     if rg:
         df = pd.DataFrame(rg).sort_values("media", ascending=False)
 
@@ -204,7 +210,6 @@ if st.session_state.analise_pronta:
             hide_index=True
         )
 
-        # Gráfico automático
         st.subheader("📈 Distribuição de Médias")
         st.bar_chart(df.set_index("usuario")["media"])
 
@@ -217,6 +222,7 @@ if st.session_state.analise_pronta:
     st.subheader("👤 Meu Desempenho")
 
     ru = gerar_ranking_por_usuario(st.session_state.usuario)
+
     if ru:
         dfu = pd.DataFrame(ru).sort_values("media", ascending=False)
         st.dataframe(dfu, use_container_width=True, hide_index=True)
