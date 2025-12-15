@@ -1,51 +1,64 @@
 import random
-from historico import salvar_analise
+import statistics
 
-def processar_fechamento(pool, resultado, fechamento):
+def processar_fechamento(pool, resultado, indices_linhas):
+    """
+    Processa as linhas do fechamento e calcula pontos
+    """
     linhas = []
-    melhor = {"linha": None, "pontos": -1, "numeros": []}
-    resultado_set = set(resultado)
+    melhor = {"linha": 0, "pontos": -1, "numeros": []}
 
-    for i, indices in enumerate(fechamento, start=1):
+    for i, indices in enumerate(indices_linhas, start=1):
         numeros = [pool[idx] for idx in indices if idx < len(pool)]
-        pontos = len(resultado_set.intersection(numeros))
+        acertos = set(numeros).intersection(resultado)
+        pontos = len(acertos)
 
-        info = {
+        linha_info = {
             "linha": i,
             "numeros": numeros,
             "pontos": pontos
         }
-
-        linhas.append(info)
+        linhas.append(linha_info)
 
         if pontos > melhor["pontos"]:
-            melhor = info
+            melhor = linha_info
 
     return linhas, melhor
 
-def gerar_jogos(numeros, quantidade=6):
-    base = list(set(numeros))
-    if len(base) < 6:
-        return []
 
+def gerar_jogos(numeros_base, qtd_jogos=6):
+    """
+    Gera jogos de 6 dezenas a partir da melhor linha
+    """
     jogos = []
-    for _ in range(quantidade):
-        jogos.append(sorted(random.sample(base, 6)))
+
+    if len(numeros_base) < 6:
+        return jogos
+
+    for _ in range(qtd_jogos):
+        jogo = sorted(random.sample(numeros_base, 6))
+        jogos.append(jogo)
+
     return jogos
 
-def score_nucleo21(media, frequencia):
-    return round((media * frequencia) / 10, 2)
 
-def analisar_e_salvar(pool, resultado, fechamento, fechamento_nome):
-    linhas, melhor = processar_fechamento(pool, resultado, fechamento)
-    jogos = gerar_jogos(melhor["numeros"])
+def calcular_score(linhas):
+    """
+    Score Núcleo 21 (0 a 10)
+    Baseado na média de pontos e consistência
+    """
+    pontos = [l["pontos"] for l in linhas]
 
-    salvar_analise(
-        resultado=resultado,
-        fechamento=fechamento_nome,
-        melhor_linha=melhor["linha"],
-        pontos=melhor["pontos"],
-        jogos=jogos
-    )
+    if not pontos:
+        return 0
 
-    return linhas, melhor, jogos
+    media = statistics.mean(pontos)
+    desvio = statistics.pstdev(pontos) if len(pontos) > 1 else 0
+
+    # Fórmula simples, estável e explicável
+    score = (media / 6) * 10
+
+    # Penaliza volatilidade
+    score -= desvio
+
+    return max(0, min(score, 10))
