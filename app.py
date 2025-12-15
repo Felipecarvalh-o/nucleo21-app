@@ -171,4 +171,40 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     jogos = gerar_jogos(melhor["numeros"])
 
     st.divider()
-    st.subheader("🎟️ Sugestões de Jogo
+    st.subheader("🎟️ Sugestões de Jogos")
+
+    for i, jogo in enumerate(jogos, 1):
+        st.write(f"Jogo {i}: {jogo}")
+
+# =========================
+# HISTÓRICO E RANKING
+# =========================
+if historico:
+    st.divider()
+    st.subheader("📈 Histórico & Ranking")
+
+    ranking = sorted(historico, key=lambda x: x["score"], reverse=True)
+
+    for i, r in enumerate(ranking[:5], 1):
+        st.write(
+            f"#{i} — {r['fechamento']} | "
+            f"Linha {r['melhor_linha']} | "
+            f"Score {r['score']:.2f}"
+        )
+
+    st.download_button(
+        "📥 Baixar Histórico",
+        data=json.dumps(historico, indent=2),
+        file_name="historico_nucleo21.json",
+        mime="application/json"
+    )
+
+# =========================
+# AVISO LEGAL
+# =========================
+st.divider()
+st.caption(
+    "⚠️ Este aplicativo é apenas educacional e estatístico. "
+    "Não garante prêmios nem aumenta probabilidades reais de sorteio. "
+    "Jogos de loteria envolvem risco."
+)
