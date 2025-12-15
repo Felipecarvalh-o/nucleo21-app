@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from io import BytesIO
-import random
 
 from engine import processar_fechamento, gerar_jogos
 from historico import (
     registrar_analise,
     gerar_ranking,
+    gerar_ranking_por_usuario,
     listar_analises_usuario,
     resumo_por_estrategia
 )
@@ -17,57 +17,49 @@ from simulador import simular_cenario
 
 st.set_page_config("Núcleo 21", "🍀", layout="centered")
 
-# ---------------- ESTILO GLOBAL (Mega-Sena Inspired) ----------------
-st.markdown("""
-<style>
-body { background-color:#f6fbf8; }
-h1,h2,h3 { color:#1E8449; }
-
-.numero-verde {
-    background:#1E8449;
-    color:white;
-    text-align:center;
-    padding:12px;
-    border-radius:14px;
-    font-size:20px;
-    font-weight:700;
-    box-shadow:0 4px 10px rgba(0,0,0,0.15);
-}
-.numero-azul {
-    background:#2471A3;
-    color:white;
-    text-align:center;
-    padding:10px;
-    border-radius:12px;
-    font-size:16px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.15);
-}
-div.stButton > button {
-    background:#1E8449;
-    color:white;
-    border-radius:10px;
-    font-weight:bold;
-}
-div.stButton > button:hover {
-    background:#145A32;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------- ESTILO GLOBAL ----------------
+st.markdown(
+    """
+    <style>
+    .numero-verde {
+        background:#1E8449;
+        color:white;
+        text-align:center;
+        padding:12px;
+        border-radius:12px;
+        font-size:20px;
+        font-weight:700;
+        box-shadow:0 4px 8px rgba(0,0,0,0.15);
+    }
+    .numero-azul {
+        background:#2471A3;
+        color:white;
+        text-align:center;
+        padding:10px;
+        border-radius:10px;
+        font-size:16px;
+        box-shadow:0 3px 6px rgba(0,0,0,0.15);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------- ESTRATÉGIAS ----------------
 ESTRATEGIAS = {
     "nucleo": {
         "label": "🟢 Núcleo Inteligente™",
         "descricao": (
-            "Estratégia analítica adaptativa que identifica a melhor linha "
-            "do fechamento e gera jogos otimizados com apoio estatístico."
+            "Estratégia analítica adaptativa. "
+            "Seleciona a melhor linha do fechamento com base em desempenho "
+            "e gera jogos otimizados com simulação estatística."
         )
     },
     "matriz": {
         "label": "🔵 Matriz de Cobertura™",
         "descricao": (
-            "Estratégia de organização matemática que prioriza "
-            "cobertura ampla e distribuição equilibrada."
+            "Estratégia clássica de fechamento matricial. "
+            "Foco em cobertura matemática e organização das apostas."
         )
     }
 }
@@ -98,20 +90,34 @@ if not st.session_state.logado:
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.header("⚙️ Configurações")
-    st.caption("1️⃣ Estratégia  |  2️⃣ Resultado  |  3️⃣ Jogos")
 
-    fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
+    st.caption(
+        "🪜 **Passo a passo**  \n"
+        "1️⃣ Escolha a estratégia  \n"
+        "2️⃣ Informe o resultado  \n"
+        "3️⃣ Gere e utilize os jogos"
+    )
+
+    fechamento_nome = st.selectbox(
+        "Fechamento", list(FECHAMENTOS.keys())
+    )
+
     estrategia_key = st.selectbox(
         "🧠 Estratégia",
         list(ESTRATEGIAS.keys()),
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
+
     st.info(ESTRATEGIAS[estrategia_key]["descricao"])
     st.write(f"👤 **{st.session_state.usuario}**")
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
-st.warning("Ferramenta educacional e estatística. Não garante prêmios.")
+
+st.warning(
+    "⚠️ Sistema educacional e estatístico. "
+    "Não prevê resultados nem garante prêmios."
+)
 
 resultado_txt = st.text_input(
     "Resultado do sorteio (6 dezenas)",
@@ -129,6 +135,7 @@ if st.button("🔍 Analisar"):
 
     if estrategia_key == "nucleo":
         _, melhor = processar_fechamento(pool, resultado, fechamento)
+
         registrar_analise(
             st.session_state.usuario,
             fechamento_nome,
@@ -137,9 +144,11 @@ if st.button("🔍 Analisar"):
             melhor["numeros"],
             estrategia_key
         )
+
         st.session_state.melhor = melhor
         st.session_state.jogos = gerar_jogos(melhor["numeros"])
     else:
+        import random
         nums = list(range(1, 61))
         random.shuffle(nums)
         st.session_state.jogos = [
@@ -151,49 +160,119 @@ if st.button("🔍 Analisar"):
 
 # ---------------- RESULTADOS ----------------
 if st.session_state.analise_pronta:
-    st.subheader("🎯 Resultado")
+    st.subheader("🎯 Resultado da Estratégia")
 
     if estrategia_key == "nucleo":
+        st.subheader("🏆 Linha Base Selecionada")
         cols = st.columns(6)
         for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
-            c.markdown(f"<div class='numero-verde'>{n:02d}</div>", unsafe_allow_html=True)
-        st.caption(f"Pontos: **{st.session_state.melhor['pontos']}**")
+            c.markdown(
+                f"<div class='numero-verde'>{str(n).zfill(2)}</div>",
+                unsafe_allow_html=True
+            )
+        st.caption(f"Pontuação obtida: **{st.session_state.melhor['pontos']}**")
 
     st.subheader("🎲 Jogos Gerados")
     for i, jogo in enumerate(st.session_state.jogos, 1):
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
-            c.markdown(f"<div class='numero-azul'>{n:02d}</div>", unsafe_allow_html=True)
+            c.markdown(
+                f"<div class='numero-azul'>{str(n).zfill(2)}</div>",
+                unsafe_allow_html=True
+            )
         st.caption(f"Jogo {i}")
 
-    # -------- EXPORTAÇÃO PREMIUM --------
-    st.subheader("📥 Exportar Jogos (Premium)")
+    # -------- EXPORTAÇÃO PREMIUM (CSV) --------
+    st.subheader("📥 Exportar Jogos")
     df_export = pd.DataFrame({
-        "Jogo": range(1, len(st.session_state.jogos)+1),
-        "Dezenas": [" ".join(f"{n:02d}" for n in j) for j in st.session_state.jogos]
+        "Jogo": range(1, len(st.session_state.jogos) + 1),
+        "Dezenas": [
+            " ".join(f"{n:02d}" for n in jogo)
+            for jogo in st.session_state.jogos
+        ]
     })
 
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-        df_export.to_excel(writer, index=False, sheet_name="Jogos")
-    buffer.seek(0)
+    csv = df_export.to_csv(index=False).encode("utf-8")
 
     st.download_button(
-        "⬇️ Baixar Jogos em Excel",
-        buffer,
-        "nucleo21_jogos.xlsx",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        "⬇️ Baixar jogos (CSV)",
+        csv,
+        "nucleo21_jogos.csv",
+        "text/csv"
     )
+
+    # ---------------- SIMULAÇÃO ----------------
+    st.subheader("🧪 Simulação Estatística")
+
+    if st.button("▶️ Simular Estratégia"):
+        st.session_state.resultado_sim = simular_cenario(
+            st.session_state.jogos, 500
+        )
+
+    if st.session_state.resultado_sim:
+        r = st.session_state.resultado_sim
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("📊 Média", r["media"])
+        c2.metric("🏆 Máximo", r["maximo"])
+        c3.metric("⭐ ≥4", r["acima_4"])
+        c4.metric("❌ Zeros", r["zeros"])
+
+        st.subheader("📊 Comparativo Pessoal")
+        resumo = resumo_por_estrategia(st.session_state.usuario)
+
+        if resumo:
+            df = pd.DataFrame(resumo)
+            df["estrategia"] = df["estrategia"].map({
+                "nucleo": "🟢 Núcleo Inteligente™",
+                "matriz": "🔵 Matriz de Cobertura™"
+            })
+
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            melhor = df.sort_values("media", ascending=False).iloc[0]
+            st.success(
+                f"📌 Para você, **{melhor['estrategia']}** "
+                f"tem apresentado melhor desempenho médio."
+            )
+
+# ---------------- EVOLUÇÃO ----------------
+st.divider()
+st.subheader("📈 Minha Evolução")
+
+dados = listar_analises_usuario(st.session_state.usuario)
+
+if len(dados) >= 2:
+    df = pd.DataFrame(dados)
+    df["ordem"] = range(1, len(df) + 1)
+    df["media_movel"] = df["pontos"].rolling(3).mean()
+
+    fig = px.line(
+        df,
+        x="ordem",
+        y=["pontos", "media_movel"],
+        markers=True
+    )
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("Faça mais análises para visualizar sua evolução.")
 
 # ---------------- RANKING ----------------
 st.divider()
 st.subheader("🏅 Ranking Geral")
+
 ranking = gerar_ranking()
 if ranking:
-    st.dataframe(
-        pd.DataFrame(ranking).sort_values("media", ascending=False),
-        use_container_width=True,
-        hide_index=True
-    )
+    df = pd.DataFrame(ranking).sort_values("media", ascending=False)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 else:
     st.info("Ainda não há dados suficientes.")
+
+# ---------------- RODAPÉ ----------------
+st.markdown(
+    "<hr><div style='text-align:center;color:#777;font-size:13px;'>"
+    "<strong>⚠️ Aviso Legal</strong><br>"
+    "Ferramenta educacional e estatística. "
+    "Sem vínculo com a Caixa ou loterias oficiais."
+    "</div>",
+    unsafe_allow_html=True
+)
