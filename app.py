@@ -198,18 +198,26 @@ if st.session_state.analise_pronta:
     st.subheader("🏆 Rankings")
 
     st.markdown("### 🌍 Ranking Geral")
-    rg = gerar_ranking()
-    if rg.empty:
-        st.info("Ainda não há dados suficientes.")
-    else:
-        st.dataframe(rg, use_container_width=True, hide_index=True)
 
-    st.markdown("### 👤 Meu Desempenho")
-    ru = gerar_ranking_por_usuario(st.session_state.usuario)
-    if ru.empty:
-        st.info("Você ainda não possui análises suficientes.")
-    else:
-        st.dataframe(ru, use_container_width=True, hide_index=True)
+rg = gerar_ranking()
+
+if not rg:
+    st.info("Ainda não há dados suficientes para o ranking geral.")
+else:
+    df_rg = pd.DataFrame(rg)
+    st.dataframe(df_rg, use_container_width=True, hide_index=True)
+
+
+   st.markdown("### 👤 Meu Desempenho")
+
+ru = gerar_ranking_por_usuario(st.session_state.usuario)
+
+if not ru:
+    st.info("Você ainda não possui análises suficientes.")
+else:
+    df_ru = pd.DataFrame(ru)
+    st.dataframe(df_ru, use_container_width=True, hide_index=True)
+
 
 # =============================
 # RODAPÉ
@@ -221,3 +229,4 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
+
