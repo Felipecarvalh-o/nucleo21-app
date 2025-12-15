@@ -112,37 +112,42 @@ if st.session_state.analise_pronta:
         c4.metric("❌ Zeros", r["zeros"])
 
 # ---------------- EVOLUÇÃO ----------------
+# ---------------- EVOLUÇÃO ----------------
 st.divider()
 st.subheader("📈 Minha Evolução")
 
 dados = listar_analises_usuario(st.session_state.usuario)
 
 if len(dados) >= 2:
-   df = pd.DataFrame(dados)
-df["ordem"] = range(1, len(df) + 1)
+    df = pd.DataFrame(dados)
+    df["ordem"] = range(1, len(df) + 1)
 
-# detectar coluna de pontos automaticamente
-for col in ["pontos", "ponto", "score", "resultado"]:
-    if col in df.columns:
-        coluna_pontos = col
-        break
-else:
-    st.error("Não foi possível identificar a coluna de pontuação.")
-    st.stop()
+    # detectar automaticamente a coluna de pontos
+    coluna_pontos = None
+    for col in ["pontos", "ponto", "score", "resultado"]:
+        if col in df.columns:
+            coluna_pontos = col
+            break
 
-df["media_movel"] = df[coluna_pontos].rolling(3).mean()
+    if coluna_pontos is None:
+        st.error("Não foi possível identificar a coluna de pontuação.")
+    else:
+        df["media_movel"] = df[coluna_pontos].rolling(3).mean()
 
-    fig = px.line(
-        df,
-        x="ordem",
-        y=["pontos", "media_movel"],
-        markers=True,
-        labels={"value": "Pontos", "ordem": "Análises"},
-        title="Evolução de Pontos (com média móvel)"
-    )
-    st.plotly_chart(fig, use_container_width=True)
+        fig = px.line(
+            df,
+            x="ordem",
+            y=[coluna_pontos, "media_movel"],
+            markers=True,
+            labels={"value": "Pontos", "ordem": "Análises"},
+            title="Evolução de Pontos (com média móvel)"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
 else:
     st.info("Faça mais análises para visualizar sua evolução.")
+
 
 # ---------------- RODAPÉ ----------------
 st.markdown(
@@ -153,4 +158,5 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
+
 
