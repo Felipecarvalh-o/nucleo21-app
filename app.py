@@ -2,11 +2,7 @@ import streamlit as st
 import pandas as pd
 
 from engine import processar_fechamento, gerar_jogos
-from historico import (
-    registrar_analise,
-    gerar_ranking,
-    gerar_ranking_por_usuario
-)
+from historico import registrar_analise, gerar_ranking, gerar_ranking_por_usuario
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
 from simulador import simular_cenario
@@ -23,7 +19,7 @@ st.set_page_config(
 # =============================
 # ESTADOS
 # =============================
-for k, v in {
+defaults = {
     "logado": False,
     "usuario": "",
     "aceitou_termos": False,
@@ -31,7 +27,8 @@ for k, v in {
     "melhor": None,
     "jogos": [],
     "resultado_sim": None,
-}.items():
+}
+for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -40,7 +37,6 @@ for k, v in {
 # =============================
 if not st.session_state.logado:
     st.title("🔐 Núcleo 21 — Login")
-
     usuario = st.text_input("Usuário")
     senha = st.text_input("Senha", type="password")
 
@@ -51,7 +47,6 @@ if not st.session_state.logado:
             st.rerun()
         else:
             st.error("Informe usuário e senha")
-
     st.stop()
 
 # =============================
@@ -59,29 +54,21 @@ if not st.session_state.logado:
 # =============================
 if not st.session_state.aceitou_termos:
     st.title("📄 Termos de Uso")
-
     st.markdown(
         """
         ⚠️ **Aviso Importante**
 
         O Núcleo 21 é uma ferramenta **educacional e estatística**.
-
-        - Não garante ganhos
-        - Não prevê resultados
-        - Não interfere em sorteios oficiais
-        - Loterias são baseadas em aleatoriedade
+        Não garante ganhos, não prevê resultados e não interfere em sorteios oficiais.
         """
     )
-
     concordo = st.checkbox("Li e concordo com os Termos de Uso")
-
     if st.button("Continuar"):
         if concordo:
             st.session_state.aceitou_termos = True
             st.rerun()
         else:
             st.error("Você precisa concordar para continuar.")
-
     st.stop()
 
 # =============================
@@ -89,12 +76,7 @@ if not st.session_state.aceitou_termos:
 # =============================
 with st.sidebar:
     st.header("⚙️ Configurações")
-
-    fechamento_nome = st.selectbox(
-        "Fechamento",
-        list(FECHAMENTOS.keys())
-    )
-
+    fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
     st.divider()
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
 
@@ -111,7 +93,6 @@ resultado_text = st.text_input(
 
 if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     resultado = converter_lista(resultado_text)
-
     if len(resultado) != 6:
         st.error("Digite exatamente 6 dezenas.")
         st.stop()
@@ -142,17 +123,15 @@ if st.session_state.analise_pronta:
     jogos = st.session_state.jogos
 
     st.subheader("🏆 Melhor Linha")
-
     cols = st.columns(6)
     for col, n in zip(cols, sorted(melhor["numeros"])):
         col.markdown(
             f"<div style='background:#2ecc71;color:white;"
-            f"text-align:center;padding:10px;"
-            f"border-radius:8px;font-size:18px;font-weight:bold;'>"
+            f"text-align:center;padding:10px;border-radius:8px;"
+            f"font-size:18px;font-weight:bold;'>"
             f"{str(n).zfill(2)}</div>",
             unsafe_allow_html=True
         )
-
     st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
 
     st.subheader("🎟️ Sugestões de Jogos")
@@ -161,31 +140,32 @@ if st.session_state.analise_pronta:
         for col, n in zip(cols, jogo):
             col.markdown(
                 f"<div style='background:#2ecc71;color:white;"
-                f"text-align:center;padding:8px;"
-                f"border-radius:6px;font-weight:bold;'>"
+                f"text-align:center;padding:8px;border-radius:6px;"
+                f"font-weight:bold;'>"
                 f"{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
             )
         st.write("")
 
     # =============================
-    # SIMULAÇÃO
+    # SIMULAÇÃO (layout melhorado)
     # =============================
     st.divider()
     st.subheader("🧪 Simulação Educacional")
 
-    if st.button("▶️ Simular Estratégia"):
+    if st.button("▶️ Simular Estratégia", use_container_width=True):
         st.session_state.resultado_sim = simular_cenario(jogos, 500)
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
-        st.metric("📊 Média", r["media"])
-        st.metric("🏆 Máximo", r["maximo"])
-        st.metric("❌ Zeros", r["zeros"])
-        st.metric("⭐ ≥4", r["acima_4"])
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("📊 Média", r["media"])
+        c2.metric("🏆 Máximo", r["maximo"])
+        c3.metric("⭐ ≥4", r["acima_4"])
+        c4.metric("❌ Zeros", r["zeros"])
 
     # =============================
-    # RANKING GERAL
+    # RANKING GERAL (ROBUSTO)
     # =============================
     st.divider()
     st.subheader("🏆 Ranking Geral")
@@ -193,45 +173,44 @@ if st.session_state.analise_pronta:
     rg = gerar_ranking()
 
     if rg:
-        df = pd.DataFrame(rg).sort_values("media", ascending=False)
+        df = pd.DataFrame(rg)
+
+        # normalização de nomes
+        rename_map = {
+            "media_pontos": "media",
+            "media": "media",
+            "total_analises": "analises",
+            "analises": "analises",
+            "max_pontos": "maximo",
+            "maximo": "maximo",
+        }
+        df = df.rename(columns=rename_map)
+
+        if "media" in df.columns:
+            df = df.sort_values("media", ascending=False)
 
         df["Posição"] = range(1, len(df) + 1)
         df["Medalha"] = df["Posição"].map({1: "🥇", 2: "🥈", 3: "🥉"}).fillna("")
 
         def destaque(row):
-            if row["usuario"] == st.session_state.usuario:
+            if row.get("usuario") == st.session_state.usuario:
                 return ["background-color:#e8f8f5"] * len(row)
             return [""] * len(row)
 
+        cols = [c for c in ["Medalha", "usuario", "media", "analises", "maximo"] if c in df.columns]
+
         st.dataframe(
-            df[["Medalha", "usuario", "media", "analises", "maximo"]]
-            .style.apply(destaque, axis=1),
+            df[cols].style.apply(destaque, axis=1),
             use_container_width=True,
             hide_index=True
         )
 
-        st.subheader("📈 Distribuição de Médias")
-        st.bar_chart(df.set_index("usuario")["media"])
+        if "media" in df.columns:
+            st.subheader("📈 Distribuição de Médias")
+            st.bar_chart(df.set_index("usuario")["media"])
 
     else:
         st.info("Ainda não há dados suficientes para o ranking.")
-
-    # =============================
-    # MEU DESEMPENHO
-    # =============================
-    st.subheader("👤 Meu Desempenho")
-
-    ru = gerar_ranking_por_usuario(st.session_state.usuario)
-
-    if ru:
-        dfu = pd.DataFrame(ru).sort_values("media", ascending=False)
-        st.dataframe(dfu, use_container_width=True, hide_index=True)
-
-        st.subheader("📊 Minha Evolução")
-        st.line_chart(dfu["media"])
-
-    else:
-        st.info("Você ainda não possui análises suficientes.")
 
 # =============================
 # RODAPÉ
