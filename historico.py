@@ -1,3 +1,6 @@
+{
+  "analises": []
+}
 import json
 import os
 from datetime import datetime
@@ -41,3 +44,4 @@ def gerar_ranking(top=5):
     historico = carregar_historico()
     ordenado = sorted(historico, key=lambda x: x["score"], reverse=True)
     return ordenado[:top]
+
