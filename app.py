@@ -22,13 +22,25 @@ st.set_page_config(
 )
 
 # =============================
-# ESTADO
+# ESTADO GLOBAL
 # =============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if "usuario" not in st.session_state:
     st.session_state.usuario = ""
+
+if "analise_pronta" not in st.session_state:
+    st.session_state.analise_pronta = False
+
+if "melhor" not in st.session_state:
+    st.session_state.melhor = None
+
+if "jogos" not in st.session_state:
+    st.session_state.jogos = []
+
+if "resultado_sim" not in st.session_state:
+    st.session_state.resultado_sim = None
 
 # =============================
 # LOGIN
@@ -104,15 +116,25 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         melhor["numeros"]
     )
 
-    # =============================
-    # MELHOR LINHA
-    # =============================
+    st.session_state.melhor = melhor
+    st.session_state.jogos = gerar_jogos(melhor["numeros"])
+    st.session_state.analise_pronta = True
+    st.session_state.resultado_sim = None
+
+# =============================
+# RESULTADOS
+# =============================
+if st.session_state.analise_pronta:
+    melhor = st.session_state.melhor
+    jogos = st.session_state.jogos
+
+    # Melhor linha
     st.subheader("🏆 Melhor Linha")
 
     cols = st.columns(6)
     for col, n in zip(cols, sorted(melhor["numeros"])):
         col.markdown(
-            f"<div style='text-align:center; padding:10px; border-radius:8px; "
+            f"<div style='text-align:center; padding:10px; border-radius:8px;"
             f"background-color:#2ecc71; color:white; font-weight:bold; font-size:18px;'>"
             f"{str(n).zfill(2)}</div>",
             unsafe_allow_html=True
@@ -120,18 +142,14 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
 
     st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
 
-    # =============================
-    # SUGESTÕES DE JOGOS
-    # =============================
+    # Sugestões
     st.subheader("🎟️ Sugestões de Jogos")
-
-    jogos = gerar_jogos(melhor["numeros"])
 
     for jogo in jogos:
         cols = st.columns(6)
         for col, n in zip(cols, jogo):
             col.markdown(
-                f"<div style='text-align:center; padding:8px; border-radius:6px; "
+                f"<div style='text-align:center; padding:8px; border-radius:6px;"
                 f"background-color:#2ecc71; color:white; font-weight:bold;'>"
                 f"{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
@@ -139,32 +157,34 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         st.write("")
 
     # =============================
-    # SIMULAÇÃO DE CENÁRIOS
+    # SIMULAÇÃO
     # =============================
     st.divider()
     st.subheader("🧪 Simulação de Cenários (Educacional)")
-
     st.caption(
-        "Esta simulação utiliza sorteios aleatórios para fins educacionais. "
+        "Simulação com sorteios aleatórios para fins educacionais. "
         "Não representa previsões nem garante resultados."
     )
 
     if st.button("▶️ Simular Estratégia", use_container_width=True):
-        resultado_sim = simular_cenario(jogos, simulacoes=500)
+        st.session_state.resultado_sim = simular_cenario(jogos, simulacoes=500)
+
+    if st.session_state.resultado_sim:
+        r = st.session_state.resultado_sim
 
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("📊 Média de Pontos", resultado_sim["media"])
-            st.metric("🏆 Máximo Obtido", resultado_sim["maximo"])
+            st.metric("📊 Média de Pontos", r["media"])
+            st.metric("🏆 Máximo Obtido", r["maximo"])
         with col2:
-            st.metric("❌ Vezes que Zerou", resultado_sim["zeros"])
-            st.metric("⭐ Pontuações ≥ 4", resultado_sim["acima_4"])
+            st.metric("❌ Vezes que Zerou", r["zeros"])
+            st.metric("⭐ Pontuações ≥ 4", r["acima_4"])
 
         st.info(
             "🔍 Interpretação correta:\n\n"
-            "• A média mostra comportamento ao longo do tempo\n"
+            "• Média indica comportamento ao longo do tempo\n"
             "• Zerar faz parte da aleatoriedade\n"
-            "• Pontuações altas são eventos raros\n\n"
+            "• Pontuações altas são raras\n\n"
             "Esta simulação não prevê resultados futuros."
         )
 
@@ -205,7 +225,6 @@ st.subheader("📈 Sua Evolução ao Longo do Tempo")
 if len(user_data) >= 3:
     df = pd.DataFrame(user_data)
     df["ordem"] = range(1, len(df) + 1)
-
     st.line_chart(df, x="ordem", y="score")
 else:
     st.info("ℹ️ A evolução aparece após 3 análises.")
@@ -229,7 +248,7 @@ with col2:
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
 
 # =============================
-# RODAPÉ
+# RODAPÉ LEGAL
 # =============================
 st.markdown(
     "<hr style='margin-top:40px;'>"
