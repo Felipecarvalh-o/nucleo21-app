@@ -20,11 +20,23 @@ def registrar_analise(usuario, fechamento, resultado, pontos, numeros):
         "usuario": usuario,
         "fechamento": fechamento,
         "resultado": resultado,
-        "pontos": pontos,
+        "pontos": int(pontos),  # garante tipo correto
         "numeros": numeros,
         "data": datetime.now().isoformat()
     })
     _salvar(dados)
+
+def _extrair_pontos(d):
+    """
+    Extrai apenas pontuação válida (int ou float).
+    Ignora listas, strings ou valores inválidos.
+    """
+    p = d.get("pontos")
+
+    if isinstance(p, (int, float)):
+        return p
+
+    return None
 
 def gerar_ranking():
     dados = _carregar()
@@ -32,13 +44,7 @@ def gerar_ranking():
 
     for d in dados:
         u = d.get("usuario")
-
-        # 🔒 compatibilidade com dados antigos
-        pontos = (
-            d.get("pontos")
-            or d.get("resultado")
-            or d.get("score")
-        )
+        pontos = _extrair_pontos(d)
 
         if u is None or pontos is None:
             continue
@@ -47,6 +53,9 @@ def gerar_ranking():
 
     resultado = []
     for u, pts in ranking.items():
+        if not pts:
+            continue
+
         resultado.append({
             "usuario": u,
             "media": round(sum(pts) / len(pts), 2),
@@ -64,12 +73,7 @@ def gerar_ranking_por_usuario(usuario):
         if d.get("usuario") != usuario:
             continue
 
-        pontos = (
-            d.get("pontos")
-            or d.get("resultado")
-            or d.get("score")
-        )
-
+        pontos = _extrair_pontos(d)
         if pontos is not None:
             pts.append(pontos)
 
