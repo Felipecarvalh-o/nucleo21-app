@@ -4,6 +4,7 @@ from datetime import datetime
 
 ARQUIVO = "historico.json"
 
+# ---------------- ARQUIVO ----------------
 def _carregar():
     if not os.path.exists(ARQUIVO):
         return []
@@ -14,30 +15,28 @@ def _salvar(dados):
     with open(ARQUIVO, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=2)
 
-def registrar_analise(usuario, fechamento, resultado, pontos, numeros):
+# ---------------- REGISTRO ----------------
+def registrar_analise(usuario, fechamento, resultado, pontos, numeros, estrategia=None):
     dados = _carregar()
     dados.append({
         "usuario": usuario,
         "fechamento": fechamento,
         "resultado": resultado,
-        "pontos": int(pontos),  # garante tipo correto
+        "pontos": int(pontos),
         "numeros": numeros,
+        "estrategia": estrategia,  # NOVO (opcional)
         "data": datetime.now().isoformat()
     })
     _salvar(dados)
 
+# ---------------- UTIL ----------------
 def _extrair_pontos(d):
-    """
-    Extrai apenas pontuação válida (int ou float).
-    Ignora listas, strings ou valores inválidos.
-    """
     p = d.get("pontos")
-
     if isinstance(p, (int, float)):
         return p
-
     return None
 
+# ---------------- RANKING GERAL ----------------
 def gerar_ranking():
     dados = _carregar()
     ranking = {}
@@ -46,7 +45,7 @@ def gerar_ranking():
         u = d.get("usuario")
         pontos = _extrair_pontos(d)
 
-        if u is None or pontos is None:
+        if not u or pontos is None:
             continue
 
         ranking.setdefault(u, []).append(pontos)
@@ -65,6 +64,7 @@ def gerar_ranking():
 
     return resultado
 
+# ---------------- RANKING POR USUÁRIO ----------------
 def gerar_ranking_por_usuario(usuario):
     dados = _carregar()
     pts = []
@@ -87,10 +87,47 @@ def gerar_ranking_por_usuario(usuario):
         "maximo": max(pts)
     }]
 
+# ---------------- HISTÓRICO USUÁRIO ----------------
 def listar_analises_usuario(usuario):
     dados = _carregar()
-    registros = [
-        d for d in dados if d.get("usuario") == usuario
-    ]
+    registros = [d for d in dados if d.get("usuario") == usuario]
     registros.sort(key=lambda x: x.get("data", ""))
     return registros
+
+# ===================================================
+# 🚀 NOVO — COMPARATIVO POR ESTRATÉGIA (ETAPA 2)
+# ===================================================
+
+def resumo_por_estrategia(usuario):
+    """
+    Retorna desempenho médio por estratégia para o usuário.
+    Usa apenas registros que tenham 'estrategia'.
+    """
+    dados = _carregar()
+    mapa = {}
+
+    for d in dados:
+        if d.get("usuario") != usuario:
+            continue
+
+        estrategia = d.get("estrategia")
+        pontos = _extrair_pontos(d)
+
+        if not estrategia or pontos is None:
+            continue
+
+        mapa.setdefault(estrategia, []).append(pontos)
+
+    resultado = []
+    for est, pts in mapa.items():
+        if not pts:
+            continue
+
+        resultado.append({
+            "estrategia": est,
+            "media": round(sum(pts) / len(pts), 2),
+            "analises": len(pts),
+            "maximo": max(pts)
+        })
+
+    return resultado
