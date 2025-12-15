@@ -5,9 +5,7 @@ import plotly.express as px
 from engine import processar_fechamento, gerar_jogos
 from historico import (
     registrar_analise,
-    gerar_ranking,
-    listar_analises_usuario,
-    resumo_por_estrategia
+    gerar_ranking
 )
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
@@ -47,16 +45,11 @@ st.markdown(
 ESTRATEGIAS = {
     "nucleo": {
         "label": "🟢 Núcleo Inteligente™",
-        "descricao": (
-            "Estratégia analítica adaptativa. "
-            "Seleciona a melhor linha do fechamento com base em desempenho."
-        )
+        "descricao": "Estratégia analítica adaptativa baseada em desempenho."
     },
     "matriz": {
         "label": "🔵 Matriz de Cobertura™",
-        "descricao": (
-            "Estratégia clássica de fechamento matricial."
-        )
+        "descricao": "Estratégia clássica de fechamento matricial."
     }
 }
 
@@ -96,7 +89,10 @@ with st.sidebar:
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
 
-    st.session_state.estrategia = estrategia_sb
+    if estrategia_sb != st.session_state.estrategia:
+        st.session_state.estrategia = estrategia_sb
+        st.session_state.analise_pronta = False
+        st.session_state.pop("melhor", None)
 
     st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
     st.write(f"👤 **{st.session_state.usuario}**")
@@ -115,7 +111,10 @@ estrategia_mobile = st.radio(
     horizontal=True
 )
 
-st.session_state.estrategia = estrategia_mobile
+if estrategia_mobile != st.session_state.estrategia:
+    st.session_state.estrategia = estrategia_mobile
+    st.session_state.analise_pronta = False
+    st.session_state.pop("melhor", None)
 
 st.warning(
     "⚠️ Sistema educacional e estatístico. "
@@ -151,7 +150,6 @@ if st.button("🔍 Analisar"):
 
         st.session_state.melhor = melhor
         st.session_state.jogos = gerar_jogos(melhor["numeros"])
-
     else:
         import random
         nums = list(range(1, 61))
@@ -168,12 +166,15 @@ if st.session_state.analise_pronta:
     st.subheader("🎯 Resultado da Estratégia")
 
     if st.session_state.estrategia == "nucleo":
-        cols = st.columns(6)
-        for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
-            c.markdown(
-                f"<div class='numero-verde'>{n:02d}</div>",
-                unsafe_allow_html=True
-            )
+        if "melhor" in st.session_state:
+            cols = st.columns(6)
+            for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
+                c.markdown(
+                    f"<div class='numero-verde'>{n:02d}</div>",
+                    unsafe_allow_html=True
+                )
+        else:
+            st.info("ℹ️ Execute a análise para gerar a linha base do Núcleo Inteligente™.")
 
     st.subheader("🎲 Jogos Gerados")
     for jogo in st.session_state.jogos:
