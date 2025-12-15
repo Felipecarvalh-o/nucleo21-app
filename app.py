@@ -96,15 +96,58 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         melhor["numeros"]
     )
 
+    # =============================
+    # MELHOR LINHA (BONITO)
+    # =============================
     st.subheader("🏆 Melhor Linha")
-    st.success(f"{sorted(melhor['numeros'])} — {melhor['pontos']} pontos")
 
+    cols = st.columns(6)
+    for col, n in zip(cols, sorted(melhor["numeros"])):
+        col.markdown(
+            f"""
+            <div style="
+                text-align:center;
+                padding:10px;
+                border-radius:8px;
+                background-color:#2ecc71;
+                color:white;
+                font-weight:bold;
+                font-size:18px;
+            ">
+                {str(n).zfill(2)}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
+
+    # =============================
+    # JOGOS SUGERIDOS (FILEIRAS)
+    # =============================
     st.subheader("🎟️ Sugestões de Jogos")
+
     for jogo in gerar_jogos(melhor["numeros"]):
-        st.write(jogo)
+        cols = st.columns(6)
+        for col, n in zip(cols, jogo):
+            col.markdown(
+                f"""
+                <div style="
+                    text-align:center;
+                    padding:8px;
+                    border-radius:6px;
+                    background-color:#f0f2f6;
+                    font-weight:600;
+                ">
+                    {str(n).zfill(2)}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        st.write("")
 
 # =============================
-# AJUSTE DE ESTRATÉGIA (INTELIGENTE)
+# AJUSTE DE ESTRATÉGIA
 # =============================
 st.divider()
 st.subheader("🧠 Seu Padrão de Resultados")
@@ -131,9 +174,31 @@ if len(user_data) >= 3:
     )
 else:
     st.info(
-        "ℹ️ Faça pelo menos **3 análises** para que eu consiga "
-        "identificar seus padrões."
+        "ℹ️ Faça pelo menos **3 análises** para identificar padrões."
     )
+
+# =============================
+# EVOLUÇÃO NO TEMPO
+# =============================
+st.divider()
+st.subheader("📈 Sua Evolução ao Longo do Tempo")
+
+if len(user_data) >= 3:
+    df = pd.DataFrame(user_data)
+    df["ordem"] = range(1, len(df) + 1)
+
+    st.line_chart(df, x="ordem", y="score")
+
+    tendencia = df["score"].iloc[-1] - df["score"].iloc[0]
+
+    if tendencia > 0:
+        st.success("⬆️ Tendência de melhora.")
+    elif tendencia < 0:
+        st.warning("⬇️ Queda recente.")
+    else:
+        st.info("➡️ Pontuação estável.")
+else:
+    st.info("ℹ️ A evolução aparece após 3 análises.")
 
 # =============================
 # RANKINGS
@@ -143,12 +208,12 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("🏆 Ranking Geral")
-    ranking = gerar_ranking()
-    for i, r in enumerate(ranking, 1):
+    for i, r in enumerate(gerar_ranking(), 1):
         st.write(f"{i}º — {r['score']} pts — {r['usuario']}")
 
 with col2:
     st.subheader("👤 Meu Ranking")
-    ranking_user = gerar_ranking_por_usuario(st.session_state.usuario)
-    for i, r in enumerate(ranking_user, 1):
+    for i, r in enumerate(
+        gerar_ranking_por_usuario(st.session_state.usuario), 1
+    ):
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
