@@ -208,7 +208,7 @@ else:
     st.dataframe(df_rg, use_container_width=True, hide_index=True)
 
 
-   st.markdown("### 👤 Meu Desempenho")
+  st.markdown("### 👤 Meu Desempenho")
 
 ru = gerar_ranking_por_usuario(st.session_state.usuario)
 
@@ -217,6 +217,7 @@ if not ru:
 else:
     df_ru = pd.DataFrame(ru)
     st.dataframe(df_ru, use_container_width=True, hide_index=True)
+
 
 
 # =============================
@@ -229,4 +230,5 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
+
 
