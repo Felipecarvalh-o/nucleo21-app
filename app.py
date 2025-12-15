@@ -7,99 +7,89 @@ from utils import converter_lista, validar_pool
 from fechamentos import FECHAMENTOS
 from engine import processar_fechamento, gerar_jogos, calcular_score
 
-
-# ===============================
-# CONFIGURAÇÃO DA PÁGINA
-# ===============================
+# ======================
+# CONFIG VISUAL (CLARO)
+# ======================
 st.set_page_config(
     page_title="Núcleo 21",
     page_icon="🍀",
     layout="centered"
 )
 
-# ===============================
-# ESTILO PREMIUM (LEGÍVEL)
-# ===============================
 st.markdown("""
 <style>
-html, body, [class*="css"]  {
-    background-color: #0e1117;
-    color: #f0f2f6;
+html, body, [class*="css"] {
+    background-color: #f7f7f7;
+    color: #1a1a1a;
 }
-.stTextInput input, .stTextArea textarea, .stSelectbox div {
-    background-color: #1c1f26;
-    color: #ffffff;
+.card {
+    background-color: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 16px;
 }
-.stButton button {
-    background: linear-gradient(90deg, #1db954, #1ed760);
-    color: black;
-    font-weight: bold;
-    border-radius: 10px;
-    height: 50px;
+.small {
+    color: #555;
+    font-size: 14px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ===============================
-# TÍTULO
-# ===============================
-st.title("🍀 Núcleo 21")
-st.caption("Ferramenta estatística e educacional baseada em fechamentos reduzidos")
-
-
-# ===============================
-# INPUTS
-# ===============================
-with st.expander("🎯 Configuração da Análise", expanded=True):
-
-    pool_text = st.text_area(
-        "1️⃣ Base de 60 dezenas (opcional)",
-        placeholder="Ex: 1 2 3 ... 60",
-        height=90
-    )
-
-    resultado_text = st.text_input(
-        "2️⃣ Resultado do sorteio (6 dezenas)",
-        placeholder="Ex: 05 18 27 33 42 59"
-    )
-
-    fechamento_nome = st.selectbox(
-        "3️⃣ Tipo de fechamento",
-        list(FECHAMENTOS.keys())
-    )
-
-    analisar = st.button("🔍 ANALISAR AGORA", use_container_width=True)
-
-
-# ===============================
+# ======================
 # HISTÓRICO
-# ===============================
+# ======================
 HIST_FILE = "historico.json"
 
-def salvar_historico(registro):
-    historico = []
+def carregar_historico():
     if os.path.exists(HIST_FILE):
         with open(HIST_FILE, "r", encoding="utf-8") as f:
-            historico = json.load(f)
+            return json.load(f)
+    return []
 
-    historico.insert(0, registro)
-
+def salvar_historico(registro):
+    historico = carregar_historico()
+    historico.append(registro)
     with open(HIST_FILE, "w", encoding="utf-8") as f:
-        json.dump(historico[:20], f, indent=2, ensure_ascii=False)
+        json.dump(historico, f, ensure_ascii=False, indent=2)
 
+# ======================
+# HEADER
+# ======================
+st.title("🍀 Núcleo 21")
+st.caption("Analisador estatístico de fechamentos — uso recreativo")
 
-def carregar_historico():
-    if not os.path.exists(HIST_FILE):
-        return []
-    with open(HIST_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+st.markdown("""
+<div class="card small">
+⚠️ <b>Aviso legal:</b><br>
+Esta ferramenta não garante prêmios e não possui qualquer vínculo com a Caixa Econômica Federal.
+Uso exclusivamente estatístico, educacional e recreativo.
+</div>
+""", unsafe_allow_html=True)
 
+# ======================
+# INPUTS
+# ======================
+pool_text = st.text_area(
+    "1️⃣ Base de dezenas (até 60 números — opcional)",
+    placeholder="Ex: 1 3 5 7 ...",
+    height=100
+)
 
-# ===============================
+resultado_text = st.text_input(
+    "2️⃣ Resultado do sorteio (6 dezenas)",
+    placeholder="Ex: 05 08 30 31 37 45"
+)
+
+fechamento_nome = st.selectbox(
+    "3️⃣ Tipo de fechamento",
+    list(FECHAMENTOS.keys())
+)
+
+# ======================
 # PROCESSAMENTO
-# ===============================
-if analisar:
+# ======================
+if st.button("🔍 ANALISAR", use_container_width=True):
 
     pool = list(range(1, 61)) if not pool_text else converter_lista(pool_text)
     valido, erro = validar_pool(pool)
@@ -109,8 +99,8 @@ if analisar:
         st.stop()
 
     resultado = converter_lista(resultado_text)
-    if len(resultado) != 6:
-        st.error("Digite exatamente 6 dezenas no resultado.")
+    if len(resultado) < 6:
+        st.error("Informe exatamente 6 dezenas no resultado.")
         st.stop()
 
     linhas, melhor = processar_fechamento(
@@ -121,76 +111,71 @@ if analisar:
 
     score = calcular_score(linhas)
 
+    # salva histórico
     salvar_historico({
         "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "fechamento": fechamento_nome,
+        "score": score,
         "melhor_linha": melhor["linha"],
-        "pontos": melhor["pontos"],
-        "score": score
+        "pontos": melhor["pontos"]
     })
 
-    # ===============================
+    # ======================
     # RESULTADOS
-    # ===============================
-    st.divider()
-    st.subheader("📊 Ranking das Linhas")
+    # ======================
+    st.subheader("📊 Resultado das Linhas")
 
-    linhas_ordenadas = sorted(linhas, key=lambda x: x["pontos"], reverse=True)
+    for l in linhas:
+        if l["pontos"] >= 4:
+            cor = "🟢"
+        elif l["pontos"] == 3:
+            cor = "🟡"
+        else:
+            cor = "🔴"
 
-    for l in linhas_ordenadas:
-        cor = "🟢" if l["pontos"] >= 4 else "🟡" if l["pontos"] == 3 else "🔴"
-        st.write(
-            f"{cor} **Linha {l['linha']}** — "
-            f"{l['pontos']} pontos | "
-            f"Números: {sorted(l['numeros'])}"
-        )
+        st.markdown(f"""
+        <div class="card">
+        {cor} <b>Linha {l["linha"]}</b><br>
+        Pontos: <b>{l["pontos"]}</b><br>
+        Números: {sorted(l["numeros"])}
+        </div>
+        """, unsafe_allow_html=True)
 
     st.success(
-        f"🏆 Melhor Linha: **Linha {melhor['linha']}** "
-        f"com **{melhor['pontos']} pontos**"
+        f"🏆 Melhor Linha: Linha {melhor['linha']} com {melhor['pontos']} pontos"
     )
 
-    st.metric("⭐ Score Geral", f"{score} / 10")
+    # ======================
+    # SCORE
+    # ======================
+    st.subheader("⭐ Score Geral")
+    st.metric("Desempenho do fechamento", f"{score} / 10")
 
-    # ===============================
-    # JOGOS SUGERIDOS
-    # ===============================
-    st.divider()
-    st.subheader("🎟️ Sugestões de Jogos")
-
+    # ======================
+    # JOGOS
+    # ======================
     jogos = gerar_jogos(melhor["numeros"])
 
+    st.subheader("🎟️ Sugestões de Jogos")
     for i, jogo in enumerate(jogos, 1):
-        st.write(f"Jogo {i}: 🎯 {jogo}")
+        st.write(f"Jogo {i}: {jogo}")
 
-
-# ===============================
+# ======================
 # HISTÓRICO VISUAL
-# ===============================
+# ======================
 st.divider()
-st.subheader("🕒 Histórico de Análises")
+st.subheader("🕘 Histórico de Análises")
 
 historico = carregar_historico()
-
-if historico:
-    for h in historico:
-        st.write(
-            f"📅 {h['data']} | "
-            f"{h['fechamento']} | "
-            f"Linha {h['melhor_linha']} | "
-            f"{h['pontos']} pts | "
-            f"Score {h['score']}/10"
-        )
+if not historico:
+    st.info("Nenhuma análise realizada ainda.")
 else:
-    st.caption("Nenhuma análise registrada ainda.")
-
-
-# ===============================
-# AVISO LEGAL
-# ===============================
-st.divider()
-st.caption(
-    "⚠️ Este aplicativo é apenas educacional e estatístico. "
-    "Não garante prêmios nem altera as probabilidades reais da loteria. "
-    "Jogos de azar envolvem risco."
-)
+    for h in reversed(historico[-5:]):
+        st.markdown(f"""
+        <div class="card small">
+        📅 {h["data"]}<br>
+        Fechamento: <b>{h["fechamento"]}</b><br>
+        Score: <b>{h["score"]}/10</b><br>
+        Melhor Linha: {h["melhor_linha"]} ({h["pontos"]} pts)
+        </div>
+        """, unsafe_allow_html=True)
