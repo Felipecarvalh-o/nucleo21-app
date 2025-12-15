@@ -4,46 +4,64 @@ from datetime import datetime
 
 ARQUIVO = "historico.json"
 
-
-def carregar_historico():
+def _carregar():
     if not os.path.exists(ARQUIVO):
         return []
+    with open(ARQUIVO, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-    try:
-        with open(ARQUIVO, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return []
-
-
-def salvar_historico(historico):
+def _salvar(dados):
     with open(ARQUIVO, "w", encoding="utf-8") as f:
-        json.dump(historico, f, indent=2, ensure_ascii=False)
+        json.dump(dados, f, ensure_ascii=False, indent=2)
 
-
-def registrar_analise(usuario, fechamento, resultado, pontos, melhor_linha):
-    historico = carregar_historico()
-
-    historico.append({
+def registrar_analise(usuario, fechamento, resultado, pontos, numeros):
+    dados = _carregar()
+    dados.append({
         "usuario": usuario,
         "fechamento": fechamento,
-        "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "resultado": resultado,
-        "score": pontos,
-        "melhor_linha": melhor_linha
+        "pontos": pontos,
+        "numeros": numeros,
+        "data": datetime.now().isoformat()
     })
+    _salvar(dados)
 
-    salvar_historico(historico)
+def gerar_ranking():
+    dados = _carregar()
+    ranking = {}
 
+    for d in dados:
+        u = d["usuario"]
+        ranking.setdefault(u, []).append(d["pontos"])
 
-def gerar_ranking(top=5):
-    historico = carregar_historico()
-    ordenado = sorted(historico, key=lambda x: x["score"], reverse=True)
-    return ordenado[:top]
+    resultado = []
+    for u, pts in ranking.items():
+        resultado.append({
+            "usuario": u,
+            "media": round(sum(pts) / len(pts), 2),
+            "analises": len(pts),
+            "maximo": max(pts)
+        })
+    return resultado
 
+def gerar_ranking_por_usuario(usuario):
+    dados = _carregar()
+    pts = [d["pontos"] for d in dados if d["usuario"] == usuario]
 
-def gerar_ranking_por_usuario(usuario, top=5):
-    historico = carregar_historico()
-    filtrado = [h for h in historico if h["usuario"] == usuario]
-    ordenado = sorted(filtrado, key=lambda x: x["score"], reverse=True)
-    return ordenado[:top]
+    if not pts:
+        return []
+
+    return [{
+        "usuario": usuario,
+        "media": round(sum(pts) / len(pts), 2),
+        "analises": len(pts),
+        "maximo": max(pts)
+    }]
+
+def listar_analises_usuario(usuario):
+    dados = _carregar()
+    registros = [
+        d for d in dados if d["usuario"] == usuario
+    ]
+    registros.sort(key=lambda x: x["data"])
+    return registros
