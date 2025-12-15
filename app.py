@@ -152,6 +152,11 @@ if st.session_state.analise_pronta:
     # =============================
     st.divider()
     st.subheader("🧪 Simulação Educacional")
+    st.caption(
+    "🧪 Simulação educacional baseada em 500 sorteios aleatórios. "
+    "Serve apenas para estudo estatístico e não representa previsões."
+)
+
 
     if st.button("▶️ Simular Estratégia", use_container_width=True):
         st.session_state.resultado_sim = simular_cenario(jogos, 500)
@@ -222,3 +227,4 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
+
