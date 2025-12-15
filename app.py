@@ -61,6 +61,11 @@ if not st.session_state.logado:
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.header("⚙️ Configurações")
+    
+    # Adicionando Passo a Passo
+    st.caption(
+        "🪜 **Passo a passo:** 1️⃣ Escolha a estratégia | 2️⃣ Informe o resultado | 3️⃣ Gere e utilize os jogos"
+    )
 
     fechamento_nome = st.selectbox(
         "Fechamento", list(FECHAMENTOS.keys())
@@ -72,11 +77,18 @@ with st.sidebar:
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
 
+    # Adicionando descrição da estratégia
     st.info(ESTRATEGIAS[estrategia_key]["descricao"])
     st.write(f"👤 {st.session_state.usuario}")
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
+
+# Disclaimer visível
+st.warning(
+    "⚠️ Este sistema não prevê resultados nem garante prêmios. "
+    "Ele organiza estratégias para quem prefere jogar com método."
+)
 
 resultado_txt = st.text_input(
     "Resultado do sorteio (6 dezenas)",
@@ -111,17 +123,13 @@ if st.button("🔍 ANALISAR"):
 
     # -------- MATRIZ DE COBERTURA --------
     else:
+        # Embalando a Matriz de Cobertura para ficar mais interessante
+        import random
+        numeros = list(range(1, 61))
+        random.shuffle(numeros)
+
         jogos_matriciais = [
-            [1, 2, 3, 4, 5, 6],
-            [7, 8, 9, 10, 11, 12],
-            [13, 14, 15, 16, 17, 18],
-            [19, 20, 21, 22, 23, 24],
-            [25, 26, 27, 28, 29, 30],
-            [31, 32, 33, 34, 35, 36],
-            [37, 38, 39, 40, 41, 42],
-            [43, 44, 45, 46, 47, 48],
-            [49, 50, 51, 52, 53, 54],
-            [55, 56, 57, 58, 59, 60]
+            sorted(numeros[i:i+6]) for i in range(0, 60, 6)
         ]
 
         st.session_state.jogos = jogos_matriciais
