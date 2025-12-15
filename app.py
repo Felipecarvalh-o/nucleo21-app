@@ -46,6 +46,12 @@ with st.sidebar:
         "Fechamento", list(FECHAMENTOS.keys())
     )
     st.write(f"👤 {st.session_state.usuario}")
+    
+    # Adicionando a opção de escolher a estratégia
+    estrategia = st.selectbox(
+        "Escolha a Estratégia",
+        ["Análise de Apostas (Sua Estratégia)", "Fechamento Matricial"]
+    )
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
@@ -62,48 +68,64 @@ if st.button("🔍 ANALISAR"):
 
     pool = list(range(1, 61))
     fechamento = FECHAMENTOS[fechamento_nome]
-    _, melhor = processar_fechamento(pool, resultado, fechamento)
+    
+    if estrategia == "Análise de Apostas (Sua Estratégia)":
+        _, melhor = processar_fechamento(pool, resultado, fechamento)
+        registrar_analise(
+            st.session_state.usuario,
+            fechamento_nome,
+            resultado,
+            melhor["pontos"],
+            melhor["numeros"]
+        )
+        st.session_state.melhor = melhor
+        st.session_state.jogos = gerar_jogos(melhor["numeros"])
+        st.session_state.analise_pronta = True
+        st.session_state.resultado_sim = None
+    
+    elif estrategia == "Fechamento Matricial":
+        # Lógica de fechamento matricial (aquela da imagem)
+        # Considerando que a matriz da imagem é baseada em 60 dezenas divididas em 6 jogos
+        jogos_matriciais = [
+            [1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12], [13, 14, 15, 16, 17, 18],
+            [19, 20, 21, 22, 23, 24], [25, 26, 27, 28, 29, 30], [31, 32, 33, 34, 35, 36],
+            [37, 38, 39, 40, 41, 42], [43, 44, 45, 46, 47, 48], [49, 50, 51, 52, 53, 54],
+            [55, 56, 57, 58, 59, 60]
+        ]  # Exemplo de jogos fixos
 
-    registrar_analise(
-        st.session_state.usuario,
-        fechamento_nome,
-        resultado,
-        melhor["pontos"],
-        melhor["numeros"]
-    )
+        # Aqui você pode substituir essa matriz com uma lógica mais complexa, caso queira
 
-    st.session_state.melhor = melhor
-    st.session_state.jogos = gerar_jogos(melhor["numeros"])
-    st.session_state.analise_pronta = True
-    st.session_state.resultado_sim = None
+        st.session_state.jogos = jogos_matriciais
+        st.session_state.analise_pronta = True
 
 # ---------------- RESULTADOS ----------------
 if st.session_state.analise_pronta:
     st.subheader("🏆 Melhor Linha")
-    cols = st.columns(6)
-    for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
-        c.markdown(
-            f"<div style='background:#2ecc71;color:white;"
-            f"text-align:center;padding:10px;border-radius:8px;"
-            f"font-size:18px;font-weight:bold;'>"
-            f"{str(n).zfill(2)}</div>",
-            unsafe_allow_html=True
-        )
-    st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
-
-    # -------- JOGOS SUGERIDOS --------
-    st.subheader("🎯 Estratégia – 6 Jogos Gerados")
-    for i, jogo in enumerate(st.session_state.jogos, 1):
+    if estrategia == "Análise de Apostas (Sua Estratégia)":
         cols = st.columns(6)
-        for c, n in zip(cols, jogo):
+        for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
             c.markdown(
-                f"<div style='background:#3498db;color:white;"
-                f"text-align:center;padding:8px;border-radius:6px;"
-                f"font-size:16px;'>"
+                f"<div style='background:#2ecc71;color:white;"
+                f"text-align:center;padding:10px;border-radius:8px;"
+                f"font-size:18px;font-weight:bold;'>"
                 f"{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
             )
-        st.caption(f"Jogo {i}")
+        st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
+    
+    elif estrategia == "Fechamento Matricial":
+        st.subheader("🎯 Estratégia de Fechamento Matricial")
+        for i, jogo in enumerate(st.session_state.jogos, 1):
+            cols = st.columns(6)
+            for c, n in zip(cols, jogo):
+                c.markdown(
+                    f"<div style='background:#3498db;color:white;"
+                    f"text-align:center;padding:8px;border-radius:6px;"
+                    f"font-size:16px;'>"
+                    f"{str(n).zfill(2)}</div>",
+                    unsafe_allow_html=True
+                )
+            st.caption(f"Jogo {i}")
 
     # -------- SIMULAÇÃO --------
     st.subheader("🧪 Simulação Educacional")
@@ -149,7 +171,7 @@ if len(dados) >= 2:
 else:
     st.info("Faça mais análises para visualizar sua evolução.")
 
-# ---------------- RANKING GERAL (CORREÇÃO) ----------------
+# ---------------- RANKING GERAL ----------------
 st.divider()
 st.subheader("🏅 Ranking Geral")
 
