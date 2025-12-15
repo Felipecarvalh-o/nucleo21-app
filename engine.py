@@ -1,57 +1,62 @@
+import json
+from datetime import datetime
 from itertools import combinations
 
+HISTORY_FILE = "history.json"
+
+
+def calcular_score(numeros, resultado):
+    return len(set(numeros) & set(resultado))
+
+
 def processar_fechamento(pool, resultado, fechamento):
-    """
-    Processa as linhas do fechamento e calcula pontos
-    """
     linhas = []
+    melhor = None
 
-    for i, linha in enumerate(fechamento, start=1):
+    for i, linha in enumerate(fechamento, 1):
         numeros = [pool[n - 1] for n in linha]
-        pontos = len(set(numeros) & set(resultado))
+        pontos = calcular_score(numeros, resultado)
 
-        linhas.append({
+        data = {
             "linha": i,
             "numeros": numeros,
             "pontos": pontos
-        })
+        }
 
-    melhor = max(linhas, key=lambda x: x["pontos"])
+        linhas.append(data)
+
+        if not melhor or pontos > melhor["pontos"]:
+            melhor = data
+
+    salvar_historico(resultado, melhor)
     return linhas, melhor
 
 
-def gerar_jogos(numeros_base, limite=6):
-    """
-    Gera jogos de 6 dezenas a partir da melhor linha
-    """
-    combinacoes = list(combinations(sorted(numeros_base), 6))
-    jogos = []
-
-    for combo in combinacoes[:limite]:
-        jogos.append(" ".join(f"{n:02d}" for n in combo))
-
-    return jogos
+def gerar_jogos(numeros_base):
+    return [list(j) for j in combinations(sorted(numeros_base), 6)][:6]
 
 
-def calcular_score(linhas):
-    """
-    Calcula um score geral (0 a 10) baseado na performance
-    """
-    pesos = {
-        6: 10,
-        5: 7,
-        4: 4,
-        3: 2
-    }
+def salvar_historico(resultado, melhor):
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+    except:
+        dados = {"analises": []}
 
-    total = 0
-    maximo = len(linhas) * 10
+    dados["analises"].append({
+        "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "resultado": resultado,
+        "melhor_linha": melhor["numeros"],
+        "pontos": melhor["pontos"]
+    })
 
-    for linha in linhas:
-        total += pesos.get(linha["pontos"], 0)
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=2, ensure_ascii=False)
 
-    if maximo == 0:
-        return 0
 
-    score = (total / maximo) * 10
-    return round(score, 1)
+def carregar_historico():
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)["analises"]
+    except:
+        return []
