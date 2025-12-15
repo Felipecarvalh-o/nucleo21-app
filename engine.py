@@ -1,57 +1,42 @@
+import random
 from historico import salvar_analise
 
 def processar_fechamento(pool, resultado, fechamento):
     linhas = []
-    melhor = {
-        "linha": None,
-        "pontos": -1,
-        "numeros": []
-    }
-
+    melhor = {"linha": None, "pontos": -1, "numeros": []}
     resultado_set = set(resultado)
 
     for i, indices in enumerate(fechamento, start=1):
-        numeros_linha = [pool[idx] for idx in indices if idx < len(pool)]
-        pontos = len(resultado_set.intersection(numeros_linha))
+        numeros = [pool[idx] for idx in indices if idx < len(pool)]
+        pontos = len(resultado_set.intersection(numeros))
 
-        linha_info = {
+        info = {
             "linha": i,
-            "numeros": numeros_linha,
+            "numeros": numeros,
             "pontos": pontos
         }
 
-        linhas.append(linha_info)
+        linhas.append(info)
 
         if pontos > melhor["pontos"]:
-            melhor = linha_info
+            melhor = info
 
     return linhas, melhor
 
-
-def gerar_jogos(numeros_linha, quantidade=6):
-    import random
+def gerar_jogos(numeros, quantidade=6):
+    base = list(set(numeros))
+    if len(base) < 6:
+        return []
 
     jogos = []
-    base = list(set(numeros_linha))
-
-    if len(base) < 6:
-        return jogos
-
     for _ in range(quantidade):
-        jogo = sorted(random.sample(base, 6))
-        jogos.append(jogo)
-
+        jogos.append(sorted(random.sample(base, 6)))
     return jogos
 
+def score_nucleo21(media, frequencia):
+    return round((media * frequencia) / 10, 2)
 
 def analisar_e_salvar(pool, resultado, fechamento, fechamento_nome):
-    """
-    Função central que:
-    - processa o fechamento
-    - gera jogos
-    - salva no histórico
-    """
-
     linhas, melhor = processar_fechamento(pool, resultado, fechamento)
     jogos = gerar_jogos(melhor["numeros"])
 
