@@ -97,7 +97,7 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     )
 
     # =============================
-    # MELHOR LINHA (BONITO)
+    # MELHOR LINHA
     # =============================
     st.subheader("🏆 Melhor Linha")
 
@@ -123,7 +123,7 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
 
     # =============================
-    # JOGOS SUGERIDOS (FILEIRAS)
+    # SUGESTÕES DE JOGOS (CORRIGIDO)
     # =============================
     st.subheader("🎟️ Sugestões de Jogos")
 
@@ -136,8 +136,9 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
                     text-align:center;
                     padding:8px;
                     border-radius:6px;
-                    background-color:#f0f2f6;
-                    font-weight:600;
+                    background-color:#2ecc71;
+                    color:white;
+                    font-weight:bold;
                 ">
                     {str(n).zfill(2)}
                 </div>
@@ -173,9 +174,7 @@ if len(user_data) >= 3:
         f"**Fechamento {melhor_fechamento}**."
     )
 else:
-    st.info(
-        "ℹ️ Faça pelo menos **3 análises** para identificar padrões."
-    )
+    st.info("ℹ️ Faça pelo menos **3 análises** para identificar padrões.")
 
 # =============================
 # EVOLUÇÃO NO TEMPO
