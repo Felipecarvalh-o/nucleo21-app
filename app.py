@@ -68,6 +68,13 @@ with st.sidebar:
 st.title("🍀 Núcleo 21")
 st.caption("Ferramenta educacional · Análise estatística")
 
+st.warning(
+    "⚠️ **AVISO IMPORTANTE**\n\n"
+    "Esta aplicação tem finalidade **exclusivamente educacional e estatística**. "
+    "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais. "
+    "Jogos de loteria são baseados em **aleatoriedade**."
+)
+
 # =============================
 # ENTRADA
 # =============================
@@ -104,26 +111,16 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     cols = st.columns(6)
     for col, n in zip(cols, sorted(melhor["numeros"])):
         col.markdown(
-            f"""
-            <div style="
-                text-align:center;
-                padding:10px;
-                border-radius:8px;
-                background-color:#2ecc71;
-                color:white;
-                font-weight:bold;
-                font-size:18px;
-            ">
-                {str(n).zfill(2)}
-            </div>
-            """,
+            f"<div style='text-align:center; padding:10px; border-radius:8px; "
+            f"background-color:#2ecc71; color:white; font-weight:bold; font-size:18px;'>"
+            f"{str(n).zfill(2)}</div>",
             unsafe_allow_html=True
         )
 
     st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
 
     # =============================
-    # SUGESTÕES DE JOGOS (CORRIGIDO)
+    # SUGESTÕES DE JOGOS
     # =============================
     st.subheader("🎟️ Sugestões de Jogos")
 
@@ -131,18 +128,9 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         cols = st.columns(6)
         for col, n in zip(cols, jogo):
             col.markdown(
-                f"""
-                <div style="
-                    text-align:center;
-                    padding:8px;
-                    border-radius:6px;
-                    background-color:#2ecc71;
-                    color:white;
-                    font-weight:bold;
-                ">
-                    {str(n).zfill(2)}
-                </div>
-                """,
+                f"<div style='text-align:center; padding:8px; border-radius:6px; "
+                f"background-color:#2ecc71; color:white; font-weight:bold;'>"
+                f"{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
             )
         st.write("")
@@ -160,7 +148,6 @@ if len(user_data) >= 3:
     df = pd.DataFrame(user_data)
 
     media = round(df["score"].mean(), 2)
-
     melhor_fechamento = (
         df.groupby("fechamento")["score"]
         .mean()
@@ -216,49 +203,19 @@ with col2:
         gerar_ranking_por_usuario(st.session_state.usuario), 1
     ):
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
+
+# =============================
+# RODAPÉ LEGAL
+# =============================
 st.markdown(
-    """
-    <hr style="margin-top:40px; margin-bottom:10px;">
-
-    <div style="
-        text-align:center;
-        font-size:12px;
-        color:gray;
-        line-height:1.6;
-    ">
-       st.markdown(
-    """
-    <hr style="margin-top:40px; margin-bottom:15px;">
-
-    <div style="
-        text-align:center;
-        font-size:14px;
-        color:gray;
-        line-height:1.8;
-    ">
-        <div style="font-size:22px; margin-bottom:6px;">
-            ⚠️
-        </div>
-
-        <strong style="font-size:15px;">
-            Aviso Legal
-        </strong>
-        <br>
-
-        Este aplicativo possui finalidade
-        <strong>exclusivamente educacional e estatística</strong>.
-        <br>
-        Não garante ganhos, não oferece previsões e não interfere
-        em sorteios oficiais.
-        <br>
-        Jogos de loteria são baseados em
-        <strong>aleatoriedade</strong>.
-        <br>
-        Utilize este sistema por sua conta e risco.
-    </div>
-    """,
+    "<hr style='margin-top:40px;'>"
+    "<div style='text-align:center; font-size:14px; color:gray; line-height:1.8;'>"
+    "<div style='font-size:22px;'>⚠️</div>"
+    "<strong>Aviso Legal</strong><br>"
+    "Este aplicativo possui finalidade <strong>exclusivamente educacional e estatística</strong>.<br>"
+    "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais.<br>"
+    "Jogos de loteria são baseados em <strong>aleatoriedade</strong>.<br>"
+    "Utilize este sistema por sua conta e risco."
+    "</div>",
     unsafe_allow_html=True
 )
-
-
-
