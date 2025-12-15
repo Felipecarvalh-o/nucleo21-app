@@ -4,7 +4,6 @@ import pandas as pd
 from engine import processar_fechamento, gerar_jogos
 from historico import (
     registrar_analise,
-    carregar_historico,
     gerar_ranking,
     gerar_ranking_por_usuario
 )
@@ -22,7 +21,7 @@ st.set_page_config(
 )
 
 # =============================
-# ESTADOS GLOBAIS
+# ESTADOS
 # =============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -65,32 +64,25 @@ if not st.session_state.logado:
     st.stop()
 
 # =============================
-# ACEITE DE TERMOS (OBRIGATÓRIO)
+# TERMOS
 # =============================
 if not st.session_state.aceitou_termos:
-    st.title("📄 Termos de Uso e Política de Privacidade")
+    st.title("📄 Termos de Uso")
 
     st.markdown(
         """
-        ### ⚠️ Aviso Importante
+        ⚠️ **Aviso Importante**
 
-        O **Núcleo 21** é uma ferramenta **exclusivamente educacional e estatística**.
+        O Núcleo 21 é uma ferramenta **educacional e estatística**.
 
-        - Não garante ganhos  
-        - Não oferece previsões  
-        - Não interfere em sorteios oficiais  
-        - Jogos de loteria são baseados em **aleatoriedade**
-
-        Ao continuar, você declara que:
-        - leu e compreendeu os Termos de Uso
-        - está ciente dos riscos envolvidos
-        - utiliza o sistema por sua conta e risco
+        - Não garante ganhos
+        - Não prevê resultados
+        - Não interfere em sorteios oficiais
+        - Loterias são baseadas em aleatoriedade
         """
     )
 
-    concordo = st.checkbox(
-        "✅ Li e concordo com os Termos de Uso e a Política de Privacidade"
-    )
+    concordo = st.checkbox("Li e concordo com os Termos de Uso")
 
     if st.button("Continuar"):
         if concordo:
@@ -106,39 +98,29 @@ if not st.session_state.aceitou_termos:
 # =============================
 with st.sidebar:
     st.header("⚙️ Configurações")
-
     fechamento_nome = st.selectbox(
         "Fechamento",
         list(FECHAMENTOS.keys())
     )
-
     st.divider()
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
 
 # =============================
-# APP PRINCIPAL
+# APP
 # =============================
 st.title("🍀 Núcleo 21")
-st.caption("Ferramenta educacional · Análise estatística")
+st.caption("Ferramenta educacional e estatística")
 
-st.warning(
-    "⚠️ Este aplicativo possui finalidade exclusivamente educacional e estatística. "
-    "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais."
-)
-
-# =============================
-# ENTRADA
-# =============================
 resultado_text = st.text_input(
     "Resultado do sorteio (6 dezenas)",
-    placeholder="05 12 18 32 41 56"
+    placeholder="01 02 03 04 05 06"
 )
 
 if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     resultado = converter_lista(resultado_text)
 
     if len(resultado) != 6:
-        st.error("Digite exatamente 6 dezenas válidas.")
+        st.error("Digite exatamente 6 dezenas.")
         st.stop()
 
     pool = list(range(1, 61))
@@ -171,8 +153,9 @@ if st.session_state.analise_pronta:
     cols = st.columns(6)
     for col, n in zip(cols, sorted(melhor["numeros"])):
         col.markdown(
-            f"<div style='text-align:center; padding:10px; border-radius:8px;"
-            f"background-color:#2ecc71; color:white; font-weight:bold; font-size:18px;'>"
+            f"<div style='background:#2ecc71;color:white;"
+            f"text-align:center;padding:10px;"
+            f"border-radius:8px;font-size:18px;font-weight:bold;'>"
             f"{str(n).zfill(2)}</div>",
             unsafe_allow_html=True
         )
@@ -180,13 +163,13 @@ if st.session_state.analise_pronta:
     st.caption(f"🎯 Pontuação: **{melhor['pontos']} pontos**")
 
     st.subheader("🎟️ Sugestões de Jogos")
-
     for jogo in jogos:
         cols = st.columns(6)
         for col, n in zip(cols, jogo):
             col.markdown(
-                f"<div style='text-align:center; padding:8px; border-radius:6px;"
-                f"background-color:#2ecc71; color:white; font-weight:bold;'>"
+                f"<div style='background:#2ecc71;color:white;"
+                f"text-align:center;padding:8px;"
+                f"border-radius:6px;font-weight:bold;'>"
                 f"{str(n).zfill(2)}</div>",
                 unsafe_allow_html=True
             )
@@ -196,32 +179,45 @@ if st.session_state.analise_pronta:
     # SIMULAÇÃO
     # =============================
     st.divider()
-    st.subheader("🧪 Simulação de Cenários (Educacional)")
+    st.subheader("🧪 Simulação Educacional")
 
-    if st.button("▶️ Simular Estratégia", use_container_width=True):
-        st.session_state.resultado_sim = simular_cenario(jogos, simulacoes=500)
+    if st.button("▶️ Simular Estratégia"):
+        st.session_state.resultado_sim = simular_cenario(jogos, 500)
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
+        st.metric("📊 Média", r["media"])
+        st.metric("🏆 Máximo", r["maximo"])
+        st.metric("❌ Zeros", r["zeros"])
+        st.metric("⭐ ≥4", r["acima_4"])
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("📊 Média de Pontos", r["media"])
-            st.metric("🏆 Máximo Obtido", r["maximo"])
-        with col2:
-            st.metric("❌ Vezes que Zerou", r["zeros"])
-            st.metric("⭐ Pontuações ≥ 4", r["acima_4"])
+    # =============================
+    # RANKINGS
+    # =============================
+    st.divider()
+    st.subheader("🏆 Rankings")
+
+    st.markdown("### 🌍 Ranking Geral")
+    rg = gerar_ranking()
+    if rg.empty:
+        st.info("Ainda não há dados suficientes.")
+    else:
+        st.dataframe(rg, use_container_width=True, hide_index=True)
+
+    st.markdown("### 👤 Meu Desempenho")
+    ru = gerar_ranking_por_usuario(st.session_state.usuario)
+    if ru.empty:
+        st.info("Você ainda não possui análises suficientes.")
+    else:
+        st.dataframe(ru, use_container_width=True, hide_index=True)
 
 # =============================
 # RODAPÉ
 # =============================
 st.markdown(
-    "<hr style='margin-top:40px;'>"
-    "<div style='text-align:center; font-size:14px; color:gray; line-height:1.8;'>"
-    "<div style='font-size:22px;'>⚠️</div>"
-    "<strong>Aviso Legal</strong><br>"
-    "Ferramenta educacional e estatística. "
-    "Não garante ganhos nem oferece previsões."
+    "<hr><div style='text-align:center;color:gray;font-size:14px;'>"
+    "⚠️ Ferramenta educacional e estatística. "
+    "Não garante ganhos nem previsões."
     "</div>",
     unsafe_allow_html=True
 )
