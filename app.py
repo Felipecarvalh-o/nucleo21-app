@@ -91,6 +91,20 @@ if st.session_state.analise_pronta:
         )
     st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
 
+    # -------- JOGOS SUGERIDOS (CORREÇÃO) --------
+    st.subheader("🎯 Estratégia – 6 Jogos Gerados")
+    for i, jogo in enumerate(st.session_state.jogos, 1):
+        cols = st.columns(6)
+        for c, n in zip(cols, jogo):
+            c.markdown(
+                f"<div style='background:#3498db;color:white;"
+                f"text-align:center;padding:8px;border-radius:6px;"
+                f"font-size:16px;'>"
+                f"{str(n).zfill(2)}</div>",
+                unsafe_allow_html=True
+            )
+        st.caption(f"Jogo {i}")
+
     # -------- SIMULAÇÃO --------
     st.subheader("🧪 Simulação Educacional")
     st.caption(
@@ -112,7 +126,6 @@ if st.session_state.analise_pronta:
         c4.metric("❌ Zeros", r["zeros"])
 
 # ---------------- EVOLUÇÃO ----------------
-# ---------------- EVOLUÇÃO ----------------
 st.divider()
 st.subheader("📈 Minha Evolução")
 
@@ -122,32 +135,21 @@ if len(dados) >= 2:
     df = pd.DataFrame(dados)
     df["ordem"] = range(1, len(df) + 1)
 
-    # detectar automaticamente a coluna de pontos
-    coluna_pontos = None
-    for col in ["pontos", "ponto", "score", "resultado"]:
-        if col in df.columns:
-            coluna_pontos = col
-            break
+    df["media_movel"] = df["pontos"].rolling(3).mean()
 
-    if coluna_pontos is None:
-        st.error("Não foi possível identificar a coluna de pontuação.")
-    else:
-        df["media_movel"] = df[coluna_pontos].rolling(3).mean()
+    fig = px.line(
+        df,
+        x="ordem",
+        y=["pontos", "media_movel"],
+        markers=True,
+        labels={"value": "Pontos", "ordem": "Análises"},
+        title="Evolução de Pontos (com média móvel)"
+    )
 
-        fig = px.line(
-            df,
-            x="ordem",
-            y=[coluna_pontos, "media_movel"],
-            markers=True,
-            labels={"value": "Pontos", "ordem": "Análises"},
-            title="Evolução de Pontos (com média móvel)"
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
 else:
     st.info("Faça mais análises para visualizar sua evolução.")
-
 
 # ---------------- RODAPÉ ----------------
 st.markdown(
@@ -158,5 +160,3 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
-
-
