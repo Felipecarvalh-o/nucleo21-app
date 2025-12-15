@@ -10,6 +10,7 @@ from historico import (
 )
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
+from simulador import simular_cenario
 
 # =============================
 # CONFIGURAÇÃO
@@ -70,9 +71,9 @@ st.caption("Ferramenta educacional · Análise estatística")
 
 st.warning(
     "⚠️ **AVISO IMPORTANTE**\n\n"
-    "Esta aplicação tem finalidade **exclusivamente educacional e estatística**. "
+    "Este aplicativo possui finalidade exclusivamente educacional e estatística. "
     "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais. "
-    "Jogos de loteria são baseados em **aleatoriedade**."
+    "Jogos de loteria são baseados em aleatoriedade."
 )
 
 # =============================
@@ -124,7 +125,9 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
     # =============================
     st.subheader("🎟️ Sugestões de Jogos")
 
-    for jogo in gerar_jogos(melhor["numeros"]):
+    jogos = gerar_jogos(melhor["numeros"])
+
+    for jogo in jogos:
         cols = st.columns(6)
         for col, n in zip(cols, jogo):
             col.markdown(
@@ -134,6 +137,36 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
                 unsafe_allow_html=True
             )
         st.write("")
+
+    # =============================
+    # SIMULAÇÃO DE CENÁRIOS
+    # =============================
+    st.divider()
+    st.subheader("🧪 Simulação de Cenários (Educacional)")
+
+    st.caption(
+        "Esta simulação utiliza sorteios aleatórios para fins educacionais. "
+        "Não representa previsões nem garante resultados."
+    )
+
+    if st.button("▶️ Simular Estratégia", use_container_width=True):
+        resultado_sim = simular_cenario(jogos, simulacoes=500)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("📊 Média de Pontos", resultado_sim["media"])
+            st.metric("🏆 Máximo Obtido", resultado_sim["maximo"])
+        with col2:
+            st.metric("❌ Vezes que Zerou", resultado_sim["zeros"])
+            st.metric("⭐ Pontuações ≥ 4", resultado_sim["acima_4"])
+
+        st.info(
+            "🔍 Interpretação correta:\n\n"
+            "• A média mostra comportamento ao longo do tempo\n"
+            "• Zerar faz parte da aleatoriedade\n"
+            "• Pontuações altas são eventos raros\n\n"
+            "Esta simulação não prevê resultados futuros."
+        )
 
 # =============================
 # AJUSTE DE ESTRATÉGIA
@@ -161,10 +194,10 @@ if len(user_data) >= 3:
         f"**Fechamento {melhor_fechamento}**."
     )
 else:
-    st.info("ℹ️ Faça pelo menos **3 análises** para identificar padrões.")
+    st.info("ℹ️ Faça pelo menos 3 análises para identificar padrões.")
 
 # =============================
-# EVOLUÇÃO NO TEMPO
+# EVOLUÇÃO
 # =============================
 st.divider()
 st.subheader("📈 Sua Evolução ao Longo do Tempo")
@@ -174,15 +207,6 @@ if len(user_data) >= 3:
     df["ordem"] = range(1, len(df) + 1)
 
     st.line_chart(df, x="ordem", y="score")
-
-    tendencia = df["score"].iloc[-1] - df["score"].iloc[0]
-
-    if tendencia > 0:
-        st.success("⬆️ Tendência de melhora.")
-    elif tendencia < 0:
-        st.warning("⬇️ Queda recente.")
-    else:
-        st.info("➡️ Pontuação estável.")
 else:
     st.info("ℹ️ A evolução aparece após 3 análises.")
 
@@ -205,16 +229,16 @@ with col2:
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
 
 # =============================
-# RODAPÉ LEGAL
+# RODAPÉ
 # =============================
 st.markdown(
     "<hr style='margin-top:40px;'>"
     "<div style='text-align:center; font-size:14px; color:gray; line-height:1.8;'>"
     "<div style='font-size:22px;'>⚠️</div>"
     "<strong>Aviso Legal</strong><br>"
-    "Este aplicativo possui finalidade <strong>exclusivamente educacional e estatística</strong>.<br>"
+    "Este aplicativo possui finalidade exclusivamente educacional e estatística.<br>"
     "Não garante ganhos, não oferece previsões e não interfere em sorteios oficiais.<br>"
-    "Jogos de loteria são baseados em <strong>aleatoriedade</strong>.<br>"
+    "Jogos de loteria são baseados em aleatoriedade.<br>"
     "Utilize este sistema por sua conta e risco."
     "</div>",
     unsafe_allow_html=True
