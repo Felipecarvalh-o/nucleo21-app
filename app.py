@@ -91,7 +91,7 @@ if st.session_state.analise_pronta:
         )
     st.caption(f"Pontos: {st.session_state.melhor['pontos']}")
 
-    # -------- JOGOS SUGERIDOS (CORREÇÃO) --------
+    # -------- JOGOS SUGERIDOS --------
     st.subheader("🎯 Estratégia – 6 Jogos Gerados")
     for i, jogo in enumerate(st.session_state.jogos, 1):
         cols = st.columns(6)
@@ -134,7 +134,6 @@ dados = listar_analises_usuario(st.session_state.usuario)
 if len(dados) >= 2:
     df = pd.DataFrame(dados)
     df["ordem"] = range(1, len(df) + 1)
-
     df["media_movel"] = df["pontos"].rolling(3).mean()
 
     fig = px.line(
@@ -147,9 +146,26 @@ if len(dados) >= 2:
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
 else:
     st.info("Faça mais análises para visualizar sua evolução.")
+
+# ---------------- RANKING GERAL (CORREÇÃO) ----------------
+st.divider()
+st.subheader("🏅 Ranking Geral")
+
+ranking = gerar_ranking()
+
+if ranking:
+    df_rank = pd.DataFrame(ranking)
+    df_rank = df_rank.sort_values("media", ascending=False)
+
+    st.dataframe(
+        df_rank,
+        use_container_width=True,
+        hide_index=True
+    )
+else:
+    st.info("Ainda não há dados suficientes para gerar o ranking.")
 
 # ---------------- RODAPÉ ----------------
 st.markdown(
