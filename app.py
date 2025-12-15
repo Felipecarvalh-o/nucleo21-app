@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from engine import processar_fechamento, gerar_jogos
 from historico import (
@@ -73,7 +72,7 @@ with st.sidebar:
     st.write(f"👤 Usuário: **{st.session_state.usuario}**")
 
 # =============================
-# ESTILO (CLARO / ESCURO)
+# ESTILO ESCURO
 # =============================
 if st.session_state.tema == "Escuro":
     st.markdown(
@@ -144,7 +143,7 @@ with col2:
         st.write(f"{i}º — {r['score']} pts — {r['data']}")
 
 # =============================
-# ESTATÍSTICAS (GRÁFICOS)
+# ESTATÍSTICAS (SEM MATPLOTLIB)
 # =============================
 st.divider()
 st.subheader("📊 Estatísticas")
@@ -154,12 +153,11 @@ historico = carregar_historico()
 if historico:
     df = pd.DataFrame(historico)
 
-    fig, ax = plt.subplots()
-    df["score"].value_counts().sort_index().plot(kind="bar", ax=ax)
-    ax.set_xlabel("Pontos")
-    ax.set_ylabel("Frequência")
-    ax.set_title("Distribuição de Pontos")
+    st.metric("📈 Total de análises", len(df))
+    st.metric("🏆 Melhor pontuação", df["score"].max())
+    st.metric("📊 Média de pontos", round(df["score"].mean(), 2))
 
-    st.pyplot(fig)
+    st.subheader("Distribuição de Pontos")
+    st.bar_chart(df["score"].value_counts().sort_index())
 else:
     st.info("Ainda não há dados suficientes para estatísticas.")
