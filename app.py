@@ -4,17 +4,33 @@ from fechamentos import FECHAMENTOS
 from engine import processar_fechamento, gerar_jogos
 
 st.set_page_config(
-    page_title="Mega Sena Analyzer",
+    page_title="Núcleo 21 – Analisador Estatístico",
     page_icon="🍀",
     layout="centered"
 )
 
-st.title("🍀 Mega Sena – Analisador Estratégico")
-st.caption("Ferramenta estatística baseada em fechamentos reduzidos")
+st.title("🍀 Núcleo 21 – Analisador Estatístico")
+st.caption("Ferramenta estatística baseada em combinações e fechamentos reduzidos")
 
-# INPUTS
+# ---------------- AVISO LEGAL ----------------
+with st.expander("⚠️ Aviso Importante", expanded=False):
+    st.write("""
+    Este aplicativo é uma ferramenta de **análise estatística e matemática**.
+
+    ❗ Não garante prêmios, não aumenta probabilidades oficiais  
+    ❗ Não possui vínculo com a Caixa Econômica Federal  
+    ❗ Resultados são apenas simulações baseadas em combinações  
+
+    Jogos de loteria envolvem risco financeiro.
+    Utilize este sistema apenas para fins **educacionais e de entretenimento**.
+    Jogue com responsabilidade.
+    """)
+
+st.divider()
+
+# ---------------- INPUTS ----------------
 pool_text = st.text_area(
-    "1️⃣ Base de 60 dezenas (ou deixe vazio para 01–60)",
+    "1️⃣ Base de 60 dezenas (ou deixe vazio para usar 01–60)",
     height=100
 )
 
@@ -23,10 +39,11 @@ resultado_text = st.text_input(
 )
 
 fechamento_nome = st.selectbox(
-    "3️⃣ Tipo de Fechamento",
+    "3️⃣ Modelo de Análise",
     list(FECHAMENTOS.keys())
 )
 
+# ---------------- PROCESSAMENTO ----------------
 if st.button("🔍 ANALISAR AGORA", use_container_width=True):
 
     pool = list(range(1, 61)) if not pool_text else converter_lista(pool_text)
@@ -60,12 +77,12 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
 
     st.divider()
     st.success(
-        f"🏆 Melhor Linha: **Linha {melhor['linha']}** "
+        f"🏆 Destaque Estatístico: **Linha {melhor['linha']}** "
         f"com **{melhor['pontos']} pontos**"
     )
 
     jogos = gerar_jogos(melhor["numeros"])
 
-    st.subheader("🎯 Sugestão de Jogos (6 dezenas)")
+    st.subheader("🎯 Combinações Geradas (6 dezenas)")
     for i, jogo in enumerate(jogos, 1):
         st.write(f"Jogo {i}: 🎟️ {jogo}")
