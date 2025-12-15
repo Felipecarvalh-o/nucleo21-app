@@ -118,9 +118,19 @@ st.subheader("📈 Minha Evolução")
 dados = listar_analises_usuario(st.session_state.usuario)
 
 if len(dados) >= 2:
-    df = pd.DataFrame(dados)
-    df["ordem"] = range(1, len(df) + 1)
-    df["media_movel"] = df["pontos"].rolling(3).mean()
+   df = pd.DataFrame(dados)
+df["ordem"] = range(1, len(df) + 1)
+
+# detectar coluna de pontos automaticamente
+for col in ["pontos", "ponto", "score", "resultado"]:
+    if col in df.columns:
+        coluna_pontos = col
+        break
+else:
+    st.error("Não foi possível identificar a coluna de pontuação.")
+    st.stop()
+
+df["media_movel"] = df[coluna_pontos].rolling(3).mean()
 
     fig = px.line(
         df,
@@ -143,3 +153,4 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True
 )
+
