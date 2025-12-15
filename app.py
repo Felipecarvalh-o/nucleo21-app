@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from io import BytesIO
 
 from engine import processar_fechamento, gerar_jogos
 from historico import (
@@ -69,7 +68,8 @@ for k, v in {
     "logado": False,
     "usuario": "",
     "analise_pronta": False,
-    "resultado_sim": None
+    "resultado_sim": None,
+    "estrategia": "nucleo"   # 🔥 estado global
 }.items():
     st.session_state.setdefault(k, v)
 
@@ -102,17 +102,29 @@ with st.sidebar:
         "Fechamento", list(FECHAMENTOS.keys())
     )
 
-    estrategia_key = st.selectbox(
+    # seletor sincronizado
+    st.selectbox(
         "🧠 Estratégia",
         list(ESTRATEGIAS.keys()),
-        format_func=lambda k: ESTRATEGIAS[k]["label"]
+        format_func=lambda k: ESTRATEGIAS[k]["label"],
+        key="estrategia"
     )
 
-    st.info(ESTRATEGIAS[estrategia_key]["descricao"])
+    st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
     st.write(f"👤 **{st.session_state.usuario}**")
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
+
+# 🔥 seletor visível no mobile
+st.subheader("🧠 Estratégia de Jogo")
+st.radio(
+    "Escolha a estratégia",
+    options=list(ESTRATEGIAS.keys()),
+    format_func=lambda k: ESTRATEGIAS[k]["label"],
+    key="estrategia",
+    horizontal=True
+)
 
 st.warning(
     "⚠️ Sistema educacional e estatístico. "
@@ -133,7 +145,7 @@ if st.button("🔍 Analisar"):
     pool = list(range(1, 61))
     fechamento = FECHAMENTOS[fechamento_nome]
 
-    if estrategia_key == "nucleo":
+    if st.session_state.estrategia == "nucleo":
         _, melhor = processar_fechamento(pool, resultado, fechamento)
 
         registrar_analise(
@@ -142,7 +154,7 @@ if st.button("🔍 Analisar"):
             resultado,
             melhor["pontos"],
             melhor["numeros"],
-            estrategia_key
+            st.session_state.estrategia
         )
 
         st.session_state.melhor = melhor
@@ -162,7 +174,7 @@ if st.button("🔍 Analisar"):
 if st.session_state.analise_pronta:
     st.subheader("🎯 Resultado da Estratégia")
 
-    if estrategia_key == "nucleo":
+    if st.session_state.estrategia == "nucleo":
         st.subheader("🏆 Linha Base Selecionada")
         cols = st.columns(6)
         for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
@@ -182,25 +194,6 @@ if st.session_state.analise_pronta:
             )
         st.caption(f"Jogo {i}")
 
-    # -------- EXPORTAÇÃO PREMIUM (CSV) --------
-    st.subheader("📥 Exportar Jogos")
-    df_export = pd.DataFrame({
-        "Jogo": range(1, len(st.session_state.jogos) + 1),
-        "Dezenas": [
-            " ".join(f"{n:02d}" for n in jogo)
-            for jogo in st.session_state.jogos
-        ]
-    })
-
-    csv = df_export.to_csv(index=False).encode("utf-8")
-
-    st.download_button(
-        "⬇️ Baixar jogos (CSV)",
-        csv,
-        "nucleo21_jogos.csv",
-        "text/csv"
-    )
-
     # ---------------- SIMULAÇÃO ----------------
     st.subheader("🧪 Simulação Estatística")
 
@@ -216,45 +209,6 @@ if st.session_state.analise_pronta:
         c2.metric("🏆 Máximo", r["maximo"])
         c3.metric("⭐ ≥4", r["acima_4"])
         c4.metric("❌ Zeros", r["zeros"])
-
-        st.subheader("📊 Comparativo Pessoal")
-        resumo = resumo_por_estrategia(st.session_state.usuario)
-
-        if resumo:
-            df = pd.DataFrame(resumo)
-            df["estrategia"] = df["estrategia"].map({
-                "nucleo": "🟢 Núcleo Inteligente™",
-                "matriz": "🔵 Matriz de Cobertura™"
-            })
-
-            st.dataframe(df, use_container_width=True, hide_index=True)
-
-            melhor = df.sort_values("media", ascending=False).iloc[0]
-            st.success(
-                f"📌 Para você, **{melhor['estrategia']}** "
-                f"tem apresentado melhor desempenho médio."
-            )
-
-# ---------------- EVOLUÇÃO ----------------
-st.divider()
-st.subheader("📈 Minha Evolução")
-
-dados = listar_analises_usuario(st.session_state.usuario)
-
-if len(dados) >= 2:
-    df = pd.DataFrame(dados)
-    df["ordem"] = range(1, len(df) + 1)
-    df["media_movel"] = df["pontos"].rolling(3).mean()
-
-    fig = px.line(
-        df,
-        x="ordem",
-        y=["pontos", "media_movel"],
-        markers=True
-    )
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.info("Faça mais análises para visualizar sua evolução.")
 
 # ---------------- RANKING ----------------
 st.divider()
