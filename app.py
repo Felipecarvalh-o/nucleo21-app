@@ -1,101 +1,67 @@
 import streamlit as st
 import json
 import os
+from datetime import datetime
+
 from utils import converter_lista, validar_pool
 from fechamentos import FECHAMENTOS
 from engine import processar_fechamento, gerar_jogos, calcular_score
 
-# =========================
+
+# ===============================
 # CONFIGURAÇÃO DA PÁGINA
-# =========================
+# ===============================
 st.set_page_config(
     page_title="Núcleo 21",
     page_icon="🍀",
     layout="centered"
 )
 
-# =========================
-# CSS PREMIUM DARK (LEGÍVEL)
-# =========================
+# ===============================
+# ESTILO PREMIUM (LEGÍVEL)
+# ===============================
 st.markdown("""
 <style>
-.stApp {
-    background: radial-gradient(circle at top, #020617, #000000);
-    color: #F8FAFC;
+html, body, [class*="css"]  {
+    background-color: #0e1117;
+    color: #f0f2f6;
 }
-
-.block-container {
-    padding-top: 3rem;
-    max-width: 760px;
+.stTextInput input, .stTextArea textarea, .stSelectbox div {
+    background-color: #1c1f26;
+    color: #ffffff;
 }
-
-h1, h2, h3 {
-    color: #F8FAFC !important;
-}
-
-p, span, label, div {
-    color: #E5E7EB !important;
-}
-
-textarea, input, select {
-    background-color: #020617 !important;
-    border-radius: 12px !important;
-    border: 1px solid #334155 !important;
-    color: #F8FAFC !important;
-}
-
-::placeholder {
-    color: #94A3B8 !important;
-}
-
-.stButton>button {
-    background: linear-gradient(135deg, #22C55E, #16A34A);
-    color: #022C22 !important;
-    border-radius: 16px;
-    padding: 0.85rem;
-    font-weight: 700;
-}
-
-.stAlert {
-    background-color: #020617;
-    border: 1px solid #334155;
-    color: #F8FAFC;
+.stButton button {
+    background: linear-gradient(90deg, #1db954, #1ed760);
+    color: black;
+    font-weight: bold;
+    border-radius: 10px;
+    height: 50px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
+
+# ===============================
 # TÍTULO
-# =========================
+# ===============================
 st.title("🍀 Núcleo 21")
 st.caption("Ferramenta estatística e educacional baseada em fechamentos reduzidos")
 
-# =========================
-# HISTÓRICO
-# =========================
-HIST_FILE = "historico.json"
 
-if not os.path.exists(HIST_FILE):
-    with open(HIST_FILE, "w") as f:
-        json.dump([], f)
-
-with open(HIST_FILE, "r") as f:
-    historico = json.load(f)
-
-# =========================
+# ===============================
 # INPUTS
-# =========================
+# ===============================
 with st.expander("🎯 Configuração da Análise", expanded=True):
 
     pool_text = st.text_area(
         "1️⃣ Base de 60 dezenas (opcional)",
-        height=90,
-        placeholder="Ex: 1 2 3 ... 60"
+        placeholder="Ex: 1 2 3 ... 60",
+        height=90
     )
 
     resultado_text = st.text_input(
         "2️⃣ Resultado do sorteio (6 dezenas)",
-        placeholder="Ex: 5 8 30 31 37 45"
+        placeholder="Ex: 05 18 27 33 42 59"
     )
 
     fechamento_nome = st.selectbox(
@@ -103,10 +69,37 @@ with st.expander("🎯 Configuração da Análise", expanded=True):
         list(FECHAMENTOS.keys())
     )
 
-# =========================
+    analisar = st.button("🔍 ANALISAR AGORA", use_container_width=True)
+
+
+# ===============================
+# HISTÓRICO
+# ===============================
+HIST_FILE = "historico.json"
+
+def salvar_historico(registro):
+    historico = []
+    if os.path.exists(HIST_FILE):
+        with open(HIST_FILE, "r", encoding="utf-8") as f:
+            historico = json.load(f)
+
+    historico.insert(0, registro)
+
+    with open(HIST_FILE, "w", encoding="utf-8") as f:
+        json.dump(historico[:20], f, indent=2, ensure_ascii=False)
+
+
+def carregar_historico():
+    if not os.path.exists(HIST_FILE):
+        return []
+    with open(HIST_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+# ===============================
 # PROCESSAMENTO
-# =========================
-if st.button("🔍 ANALISAR AGORA", use_container_width=True):
+# ===============================
+if analisar:
 
     pool = list(range(1, 61)) if not pool_text else converter_lista(pool_text)
     valido, erro = validar_pool(pool)
@@ -116,8 +109,8 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
         st.stop()
 
     resultado = converter_lista(resultado_text)
-    if len(resultado) < 6:
-        st.error("Digite pelo menos 6 dezenas no resultado.")
+    if len(resultado) != 6:
+        st.error("Digite exatamente 6 dezenas no resultado.")
         st.stop()
 
     linhas, melhor = processar_fechamento(
@@ -128,36 +121,23 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
 
     score = calcular_score(linhas)
 
-    # Salva no histórico
-    historico.append({
+    salvar_historico({
+        "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "fechamento": fechamento_nome,
         "melhor_linha": melhor["linha"],
         "pontos": melhor["pontos"],
         "score": score
     })
 
-    with open(HIST_FILE, "w") as f:
-        json.dump(historico, f, indent=2)
-
-    # =========================
-    # RESUMO PREMIUM
-    # =========================
+    # ===============================
+    # RESULTADOS
+    # ===============================
     st.divider()
-    st.subheader("📌 Resumo da Análise")
+    st.subheader("📊 Ranking das Linhas")
 
-    st.markdown(f"""
-    **🏆 Melhor Linha:** Linha {melhor['linha']}  
-    **🎯 Pontos:** {melhor['pontos']}  
-    **📊 Score Núcleo 21:** **{score:.2f} / 10**
-    """)
+    linhas_ordenadas = sorted(linhas, key=lambda x: x["pontos"], reverse=True)
 
-    # =========================
-    # RESULTADO DAS LINHAS
-    # =========================
-    st.divider()
-    st.subheader("📊 Resultado das Linhas")
-
-    for l in linhas:
+    for l in linhas_ordenadas:
         cor = "🟢" if l["pontos"] >= 4 else "🟡" if l["pontos"] == 3 else "🔴"
         st.write(
             f"{cor} **Linha {l['linha']}** — "
@@ -165,46 +145,52 @@ if st.button("🔍 ANALISAR AGORA", use_container_width=True):
             f"Números: {sorted(l['numeros'])}"
         )
 
-    # =========================
-    # JOGOS GERADOS
-    # =========================
-    jogos = gerar_jogos(melhor["numeros"])
+    st.success(
+        f"🏆 Melhor Linha: **Linha {melhor['linha']}** "
+        f"com **{melhor['pontos']} pontos**"
+    )
 
+    st.metric("⭐ Score Geral", f"{score} / 10")
+
+    # ===============================
+    # JOGOS SUGERIDOS
+    # ===============================
     st.divider()
     st.subheader("🎟️ Sugestões de Jogos")
 
+    jogos = gerar_jogos(melhor["numeros"])
+
     for i, jogo in enumerate(jogos, 1):
-        st.write(f"Jogo {i}: {jogo}")
+        st.write(f"Jogo {i}: 🎯 {jogo}")
 
-# =========================
-# HISTÓRICO E RANKING
-# =========================
+
+# ===============================
+# HISTÓRICO VISUAL
+# ===============================
+st.divider()
+st.subheader("🕒 Histórico de Análises")
+
+historico = carregar_historico()
+
 if historico:
-    st.divider()
-    st.subheader("📈 Histórico & Ranking")
-
-    ranking = sorted(historico, key=lambda x: x["score"], reverse=True)
-
-    for i, r in enumerate(ranking[:5], 1):
+    for h in historico:
         st.write(
-            f"#{i} — {r['fechamento']} | "
-            f"Linha {r['melhor_linha']} | "
-            f"Score {r['score']:.2f}"
+            f"📅 {h['data']} | "
+            f"{h['fechamento']} | "
+            f"Linha {h['melhor_linha']} | "
+            f"{h['pontos']} pts | "
+            f"Score {h['score']}/10"
         )
+else:
+    st.caption("Nenhuma análise registrada ainda.")
 
-    st.download_button(
-        "📥 Baixar Histórico",
-        data=json.dumps(historico, indent=2),
-        file_name="historico_nucleo21.json",
-        mime="application/json"
-    )
 
-# =========================
+# ===============================
 # AVISO LEGAL
-# =========================
+# ===============================
 st.divider()
 st.caption(
     "⚠️ Este aplicativo é apenas educacional e estatístico. "
-    "Não garante prêmios nem aumenta probabilidades reais de sorteio. "
-    "Jogos de loteria envolvem risco."
+    "Não garante prêmios nem altera as probabilidades reais da loteria. "
+    "Jogos de azar envolvem risco."
 )
