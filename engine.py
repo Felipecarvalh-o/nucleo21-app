@@ -3,12 +3,26 @@ import random
 
 
 def calcular_score(numeros, resultado):
+    """
+    Calcula a quantidade de dezenas coincidentes
+    entre um conjunto analisado e um resultado passado.
+    Uso estatístico / histórico.
+    """
     return len(set(numeros) & set(resultado))
 
 
 def processar_fechamento(pool, resultado, fechamento):
+    """
+    Avalia todas as linhas de um fechamento com base
+    em um resultado histórico informado.
+
+    Retorna:
+    - lista completa de linhas avaliadas
+    - linha com maior pontuação observada
+    """
+
     linhas = []
-    melhor = None
+    linha_destaque = None
 
     for i, linha in enumerate(fechamento, 1):
         numeros = [pool[n - 1] for n in linha if n > 0]
@@ -17,20 +31,24 @@ def processar_fechamento(pool, resultado, fechamento):
         data = {
             "linha": i,
             "numeros": numeros,
-            "pontos": pontos
+            "pontos": pontos  # pontuação observada (histórica)
         }
 
         linhas.append(data)
 
-        if not melhor or pontos > melhor["pontos"]:
-            melhor = data
+        if not linha_destaque or pontos > linha_destaque["pontos"]:
+            linha_destaque = data
 
-    return linhas, melhor
+    return linhas, linha_destaque
 
 
 def gerar_jogos(numeros_base, limite=6):
     """
-    Núcleo Inteligente™
+    🍀 Núcleo Inteligente™
+
+    Gera combinações a partir de um núcleo reduzido,
+    utilizando critério de organização e amostragem.
+    Não representa previsão ou garantia de resultado.
     """
     combs = list(combinations(sorted(numeros_base), 6))
     random.shuffle(combs)
@@ -38,14 +56,14 @@ def gerar_jogos(numeros_base, limite=6):
 
 
 # ===================================================
-# 🟣 NÚCLEO EXPANDIDO 25™ — FECHAMENTO REAL
+# 🟣 NÚCLEO EXPANDIDO 25™ — DISTRIBUIÇÃO BALANCEADA
 # ===================================================
 
 def validar_dezenas_25(dezenas):
     dezenas = sorted(set(dezenas))
 
     if len(dezenas) != 25:
-        return False, "Informe exatamente 25 dezenas."
+        return False, "Informe exatamente 25 dezenas distintas."
 
     if any(n < 1 or n > 60 for n in dezenas):
         return False, "As dezenas devem estar entre 1 e 60."
@@ -55,9 +73,11 @@ def validar_dezenas_25(dezenas):
 
 def gerar_jogos_nucleo25(dezenas_25, total_jogos=190):
     """
-    Núcleo Expandido 25™
-    Estratégia com distribuição balanceada
-    (não usa primeiras combinações)
+    🍀 Núcleo Expandido 25™
+
+    Estratégia de organização combinatória com
+    controle de frequência das dezenas.
+    Utiliza critérios estatísticos e não preditivos.
     """
 
     valido, dezenas = validar_dezenas_25(dezenas_25)
@@ -65,16 +85,15 @@ def gerar_jogos_nucleo25(dezenas_25, total_jogos=190):
         raise ValueError(dezenas)
 
     todas = list(combinations(dezenas, 6))
-
-    # 🔹 Embaralha para evitar jogos colados
     random.shuffle(todas)
 
     selecionados = []
     freq = {n: 0 for n in dezenas}
 
+    limite_freq = (total_jogos * 6 / 25) + 2
+
     for jogo in todas:
-        # Evita sobrecarga de dezenas
-        if all(freq[n] < (total_jogos * 6 / 25) + 2 for n in jogo):
+        if all(freq[n] < limite_freq for n in jogo):
             selecionados.append(list(jogo))
             for n in jogo:
                 freq[n] += 1
