@@ -21,22 +21,46 @@ st.markdown("""
 .numero-azul {background:#2471A3;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
 .numero-roxo {background:#8E44AD;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
 .bloco-jogo {margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e0e0e0;}
+.descricao {font-size:15px;line-height:1.5;}
+.aviso {font-size:12px;color:#777;}
 </style>
 """, unsafe_allow_html=True)
 
 # ================= ESTRATÉGIAS =================
 ESTRATEGIAS = {
     "nucleo": {
-        "label": "🟢 Núcleo Inteligente™",
-        "descricao": "Seleciona a melhor linha do fechamento com base em desempenho."
+        "label": "🍀 Núcleo Inteligente™",
+        "cor": "#1E8449",
+        "descricao": """
+        <div class='descricao'>
+        Onde muitos veem dezenas, o <b>Núcleo Inteligente™</b> enxerga padrões.<br>
+        Analisa o desempenho histórico do fechamento e destaca a linha mais eficiente,
+        seguindo a lógica do <i>“jogar no miolo”</i>, muito citada por apostadores experientes.
+        </div>
+        """
     },
     "matriz": {
-        "label": "🔵 Matriz de Cobertura™",
-        "descricao": "Geração clássica e aleatória de jogos."
+        "label": "🍀 Matriz de Cobertura™",
+        "cor": "#2471A3",
+        "descricao": """
+        <div class='descricao'>
+        Estratégia focada em <b>amplitude e equilíbrio</b>.<br>
+        Distribui as dezenas de forma organizada para ampliar a presença estatística
+        nos sorteios, respeitando a lógica matemática dos fechamentos.
+        </div>
+        """
     },
     "nucleo25": {
-        "label": "🟣 Núcleo Expandido 25™",
-        "descricao": "Selecione 25 dezenas e gere 190 jogos organizados."
+        "label": "🍀 Núcleo Expandido 25™",
+        "cor": "#8E44AD",
+        "descricao": """
+        <div class='descricao'>
+        Para quem gosta de trabalhar com <b>mais massa crítica</b>.<br>
+        Expande o núcleo principal para até 25 dezenas,
+        mantendo organização, leitura estatística e disciplina de jogo —
+        abordagem comum entre quem estuda ciclos e repetição de padrões.
+        </div>
+        """
     }
 }
 
@@ -67,17 +91,26 @@ with st.sidebar:
 st.title("🍀 Núcleo 21")
 
 c1, c2, c3 = st.columns(3)
-if c1.button("🟢 Núcleo Inteligente™", use_container_width=True):
+if c1.button("🍀 Núcleo Inteligente™", use_container_width=True):
     st.session_state.estrategia = "nucleo"
     st.session_state.analise_pronta = False
-if c2.button("🔵 Matriz de Cobertura™", use_container_width=True):
+
+if c2.button("🍀 Matriz de Cobertura™", use_container_width=True):
     st.session_state.estrategia = "matriz"
     st.session_state.analise_pronta = False
-if c3.button("🟣 Núcleo Expandido 25™", use_container_width=True):
+
+if c3.button("🍀 Núcleo Expandido 25™", use_container_width=True):
     st.session_state.estrategia = "nucleo25"
     st.session_state.analise_pronta = False
 
-st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
+st.markdown(ESTRATEGIAS[st.session_state.estrategia]["descricao"], unsafe_allow_html=True)
+
+st.markdown("""
+<div class='aviso'>
+As estratégias utilizam critérios estatísticos e históricos.
+A Mega-Sena é um jogo de azar e não há garantia de premiação.
+</div>
+""", unsafe_allow_html=True)
 
 # ================= INPUTS =================
 if st.session_state.estrategia == "nucleo25":
@@ -122,14 +155,18 @@ if st.button("🔍 Analisar"):
 if st.session_state.analise_pronta:
 
     st.subheader("🎲 Jogos Gerados")
-    for i, jogo in enumerate(st.session_state.jogos, 1):
+    for jogo in st.session_state.jogos:
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
-            css = "numero-roxo" if st.session_state.estrategia == "nucleo25" else "numero-azul"
+            css = (
+                "numero-verde" if st.session_state.estrategia == "nucleo"
+                else "numero-roxo" if st.session_state.estrategia == "nucleo25"
+                else "numero-azul"
+            )
             c.markdown(f"<div class='{css}'>{n:02d}</div>", unsafe_allow_html=True)
         st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
 
-    # ================= SIMULADOR (RESTAURADO) =================
+    # ================= SIMULAÇÃO =================
     st.subheader("🧪 Simulação Estatística")
     TOTAL = 500
 
