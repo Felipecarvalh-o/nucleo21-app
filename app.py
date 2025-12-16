@@ -14,43 +14,14 @@ from simulador import simular_cenario
 
 st.set_page_config("Núcleo 21", "🍀", layout="centered")
 
-# ---------------- ESTILO GLOBAL ----------------
+# ---------------- ESTILO ----------------
 st.markdown(
     """
     <style>
-    .numero-verde {
-        background:#1E8449;
-        color:white;
-        text-align:center;
-        padding:12px;
-        border-radius:12px;
-        font-size:20px;
-        font-weight:700;
-        margin-bottom:4px;
-    }
-    .numero-azul {
-        background:#2471A3;
-        color:white;
-        text-align:center;
-        padding:10px;
-        border-radius:10px;
-        font-size:16px;
-        margin-bottom:4px;
-    }
-    .numero-roxo {
-        background:#8E44AD;
-        color:white;
-        text-align:center;
-        padding:10px;
-        border-radius:10px;
-        font-size:15px;
-        margin-bottom:4px;
-    }
-    .bloco-jogo {
-        margin-bottom:16px;
-        padding-bottom:8px;
-        border-bottom:1px solid #e0e0e0;
-    }
+    .numero-verde {background:#1E8449;color:white;padding:12px;border-radius:12px;font-size:20px;font-weight:700}
+    .numero-azul {background:#2471A3;color:white;padding:10px;border-radius:10px;font-size:16px}
+    .numero-roxo {background:#8E44AD;color:white;padding:10px;border-radius:10px;font-size:15px}
+    .bloco-jogo {margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e0e0e0}
     </style>
     """,
     unsafe_allow_html=True
@@ -64,23 +35,23 @@ ESTRATEGIAS = {
     },
     "matriz": {
         "label": "🔵 Matriz de Cobertura™",
-        "descricao": "Geração clássica de jogos com foco em cobertura matemática."
+        "descricao": "Jogos aleatórios com foco em cobertura estatística."
     },
     "nucleo25": {
         "label": "🟣 Núcleo Expandido 25™",
-        "descricao": (
-            "Selecione 25 dezenas e gere automaticamente 190 jogos "
-            "estruturados com alta organização combinatória."
-        )
+        "descricao": "Selecione 25 dezenas e gere 190 jogos balanceados."
     }
 }
 
 # ---------------- ESTADO ----------------
-st.session_state.setdefault("logado", False)
-st.session_state.setdefault("usuario", "")
-st.session_state.setdefault("estrategia", "nucleo")
-st.session_state.setdefault("analise_pronta", False)
-st.session_state.setdefault("resultado_sim", None)
+for k, v in {
+    "logado": False,
+    "usuario": "",
+    "estrategia": "nucleo",
+    "analise_pronta": False,
+    "resultado_sim": None
+}.items():
+    st.session_state.setdefault(k, v)
 
 # ---------------- LOGIN ----------------
 if not st.session_state.logado:
@@ -96,77 +67,53 @@ if not st.session_state.logado:
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
-
     estrategia_sb = st.selectbox(
         "🧠 Estratégia",
         list(ESTRATEGIAS.keys()),
-        index=list(ESTRATEGIAS.keys()).index(st.session_state.estrategia),
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
-
-    if estrategia_sb != st.session_state.estrategia:
-        st.session_state.estrategia = estrategia_sb
-        st.session_state.analise_pronta = False
-        st.session_state.pop("melhor", None)
-
-    st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
+    st.session_state.estrategia = estrategia_sb
+    st.info(ESTRATEGIAS[estrategia_sb]["descricao"])
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
 
-# -------- SELETOR MOBILE --------
-estrategia_mobile = st.radio(
-    "🧠 Estratégia de Jogo",
-    options=list(ESTRATEGIAS.keys()),
-    index=list(ESTRATEGIAS.keys()).index(st.session_state.estrategia),
-    format_func=lambda k: ESTRATEGIAS[k]["label"],
-    horizontal=True
-)
-
-if estrategia_mobile != st.session_state.estrategia:
-    st.session_state.estrategia = estrategia_mobile
-    st.session_state.analise_pronta = False
-    st.session_state.pop("melhor", None)
-
 # ---------------- INPUTS ----------------
 if st.session_state.estrategia == "nucleo25":
-    dezenas_25_txt = st.text_area(
-        "Digite as 25 dezenas (separadas por espaço ou vírgula)",
+    dezenas_txt = st.text_area(
+        "Digite as 25 dezenas",
         placeholder="01 02 03 ... 25"
     )
 else:
     resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
 
-# ---------------- ANÁLISE ----------------
+# ---------------- ANALISAR ----------------
 if st.button("🔍 Analisar"):
 
-    # -------- 🟣 NÚCLEO 25 --------
     if st.session_state.estrategia == "nucleo25":
-        dezenas = converter_lista(dezenas_25_txt)
+        dezenas = converter_lista(dezenas_txt)
+        jogos = gerar_jogos_nucleo25(dezenas)
 
-        try:
-            jogos = gerar_jogos_nucleo25(dezenas)
-        except ValueError as e:
-            st.error(str(e))
-            st.stop()
+        registrar_analise(
+            st.session_state.usuario,
+            "Núcleo 25",
+            [],
+            0,
+            dezenas,
+            "nucleo25"
+        )
 
         st.session_state.jogos = jogos
         st.session_state.analise_pronta = True
-        st.session_state.resultado_sim = None
-        st.session_state.pop("melhor", None)
 
-    # -------- 🟢 NÚCLEO INTELIGENTE / 🔵 MATRIZ --------
     else:
         resultado = converter_lista(resultado_txt)
-        if len(resultado) != 6:
-            st.error("Digite exatamente 6 dezenas")
-            st.stop()
-
         pool = list(range(1, 61))
         fechamento = FECHAMENTOS[fechamento_nome]
 
         if st.session_state.estrategia == "nucleo":
             _, melhor = processar_fechamento(pool, resultado, fechamento)
+            st.session_state.jogos = gerar_jogos(melhor["numeros"])
             registrar_analise(
                 st.session_state.usuario,
                 fechamento_nome,
@@ -175,61 +122,48 @@ if st.button("🔍 Analisar"):
                 melhor["numeros"],
                 "nucleo"
             )
-            st.session_state.melhor = melhor
-            st.session_state.jogos = gerar_jogos(melhor["numeros"])
 
-        elif st.session_state.estrategia == "matriz":
+        else:
             import random
             nums = list(range(1, 61))
             random.shuffle(nums)
-            st.session_state.jogos = [
-                sorted(nums[i:i+6]) for i in range(0, 60, 6)
-            ]
+            jogos = [sorted(nums[i:i+6]) for i in range(0, 60, 6)]
+            st.session_state.jogos = jogos
+
+            registrar_analise(
+                st.session_state.usuario,
+                fechamento_nome,
+                resultado,
+                0,
+                [],
+                "matriz"
+            )
 
         st.session_state.analise_pronta = True
-        st.session_state.resultado_sim = None
 
 # ---------------- RESULTADOS ----------------
 if st.session_state.analise_pronta:
-
-    if st.session_state.estrategia == "nucleo" and "melhor" in st.session_state:
-        st.subheader("🏆 Linha Base Selecionada")
-        cols = st.columns(6)
-        for c, n in zip(cols, st.session_state.melhor["numeros"]):
-            c.markdown(
-                f"<div class='numero-verde'>{n:02d}</div>",
-                unsafe_allow_html=True
-            )
-
     st.subheader("🎲 Jogos Gerados")
-
     for i, jogo in enumerate(st.session_state.jogos, 1):
         st.markdown(f"**Jogo {i}**")
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
-            css = "numero-roxo" if st.session_state.estrategia == "nucleo25" else "numero-azul"
-            c.markdown(
-                f"<div class='{css}'>{n:02d}</div>",
-                unsafe_allow_html=True
-            )
+            cor = "numero-roxo" if st.session_state.estrategia == "nucleo25" else "numero-azul"
+            c.markdown(f"<div class='{cor}'>{n:02d}</div>", unsafe_allow_html=True)
         st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
 
-    # ---------------- SIMULAÇÃO ----------------
-    st.subheader("🧪 Simulação Estatística")
-    TOTAL = 500
+# ---------------- SIMULAÇÃO ----------------
+st.subheader("🧪 Simulação Estatística")
+if st.button("▶️ Simular Estratégia"):
+    st.session_state.resultado_sim = simular_cenario(st.session_state.jogos, 500)
 
-    if st.button("▶️ Simular Estratégia"):
-        st.session_state.resultado_sim = simular_cenario(
-            st.session_state.jogos, TOTAL
-        )
-
-    if st.session_state.resultado_sim:
-        r = st.session_state.resultado_sim
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("📊 Média", r["media"])
-        c2.metric("🏆 Máximo", r["maximo"])
-        c3.metric("❌ Zeros", r["zeros"])
-        c4.metric("🔢 Sorteios", TOTAL)
+if st.session_state.resultado_sim:
+    r = st.session_state.resultado_sim
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("📊 Média", r["media"])
+    c2.metric("🏆 Máximo", r["maximo"])
+    c3.metric("❌ Zeros", r["zeros"])
+    c4.metric("🔢 Sorteios", r["total"])
 
 # ---------------- GRÁFICO ----------------
 st.divider()
@@ -238,20 +172,19 @@ st.subheader("📈 Comparativo das Estratégias")
 dados = listar_analises_usuario(st.session_state.usuario)
 if dados:
     df = pd.DataFrame(dados)
-    if "estrategia" in df.columns:
-        fig = px.line(
-            df,
-            x=df.index,
-            y="pontos",
-            color="estrategia",
-            markers=True,
-            color_discrete_map={
-                "nucleo": "#1E8449",
-                "matriz": "#2471A3",
-                "nucleo25": "#8E44AD"
-            }
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    fig = px.line(
+        df,
+        x=df.index,
+        y="pontos",
+        color="estrategia",
+        markers=True,
+        color_discrete_map={
+            "nucleo": "#1E8449",
+            "matriz": "#2471A3",
+            "nucleo25": "#8E44AD"
+        }
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 # ---------------- RANKING ----------------
 st.divider()
