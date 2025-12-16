@@ -3,10 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 from engine import processar_fechamento, gerar_jogos
-from historico import (
-    registrar_analise,
-    gerar_ranking
-)
+from historico import registrar_analise, gerar_ranking
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
 from simulador import simular_cenario
@@ -26,6 +23,7 @@ st.markdown(
         font-size:20px;
         font-weight:700;
         box-shadow:0 4px 8px rgba(0,0,0,0.15);
+        margin-bottom:4px;
     }
     .numero-azul {
         background:#2471A3;
@@ -35,6 +33,12 @@ st.markdown(
         border-radius:10px;
         font-size:16px;
         box-shadow:0 3px 6px rgba(0,0,0,0.15);
+        margin-bottom:4px;
+    }
+    .bloco-jogo {
+        margin-bottom:16px;
+        padding-bottom:8px;
+        border-bottom:1px solid #e0e0e0;
     }
     </style>
     """,
@@ -165,25 +169,26 @@ if st.button("🔍 Analisar"):
 if st.session_state.analise_pronta:
     st.subheader("🎯 Resultado da Estratégia")
 
-    if st.session_state.estrategia == "nucleo":
-        if "melhor" in st.session_state:
-            cols = st.columns(6)
-            for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
-                c.markdown(
-                    f"<div class='numero-verde'>{n:02d}</div>",
-                    unsafe_allow_html=True
-                )
-        else:
-            st.info("ℹ️ Execute a análise para gerar a linha base do Núcleo Inteligente™.")
-
-    st.subheader("🎲 Jogos Gerados")
-    for jogo in st.session_state.jogos:
+    if st.session_state.estrategia == "nucleo" and "melhor" in st.session_state:
         cols = st.columns(6)
-        for c, n in zip(cols, jogo):
+        for c, n in zip(cols, sorted(st.session_state.melhor["numeros"])):
             c.markdown(
-                f"<div class='numero-azul'>{n:02d}</div>",
+                f"<div class='numero-verde'>{n:02d}</div>",
                 unsafe_allow_html=True
             )
+
+    st.subheader("🎲 Jogos Gerados")
+
+    for i, jogo in enumerate(st.session_state.jogos, 1):
+        with st.container():
+            st.markdown(f"**Jogo {i}**")
+            cols = st.columns(6)
+            for c, n in zip(cols, jogo):
+                c.markdown(
+                    f"<div class='numero-azul'>{n:02d}</div>",
+                    unsafe_allow_html=True
+                )
+            st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
 
     # ---------------- SIMULAÇÃO ----------------
     st.subheader("🧪 Simulação Estatística")
@@ -197,7 +202,6 @@ if st.session_state.analise_pronta:
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
-
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("📊 Média", r.get("media", 0))
         c2.metric("🏆 Máximo", r.get("maximo", 0))
