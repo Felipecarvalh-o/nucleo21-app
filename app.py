@@ -20,46 +20,50 @@ st.markdown("""
 .numero-verde {background:#1E8449;color:white;padding:12px;border-radius:12px;font-size:20px;font-weight:700;text-align:center;}
 .numero-azul {background:#2471A3;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
 .numero-roxo {background:#8E44AD;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
+
 .bloco-jogo {margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e0e0e0;}
-.descricao {font-size:15px;line-height:1.5;}
-.aviso {font-size:12px;color:#777;}
+
+.descricao {font-size:15px;line-height:1.6;}
+.aviso {font-size:12px;color:#777;margin-top:6px;}
+
+.botao {
+    padding:12px;
+    border-radius:10px;
+    font-weight:600;
+    text-align:center;
+    cursor:pointer;
+    color:white;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ================= ESTRATÉGIAS =================
 ESTRATEGIAS = {
     "nucleo": {
-        "label": "🍀 Núcleo Inteligente™",
+        "titulo": "🍀 Núcleo Inteligente™",
         "cor": "#1E8449",
         "descricao": """
-        <div class='descricao'>
         Onde muitos veem dezenas, o <b>Núcleo Inteligente™</b> enxerga padrões.<br>
-        Analisa o desempenho histórico do fechamento e destaca a linha mais eficiente,
-        seguindo a lógica do <i>“jogar no miolo”</i>, muito citada por apostadores experientes.
-        </div>
+        Analisa o desempenho histórico dos fechamentos e destaca a linha
+        mais eficiente — seguindo a lógica do <i>“jogar no miolo”</i>.
         """
     },
     "matriz": {
-        "label": "🍀 Matriz de Cobertura™",
+        "titulo": "🍀 Matriz de Cobertura™",
         "cor": "#2471A3",
         "descricao": """
-        <div class='descricao'>
         Estratégia focada em <b>amplitude e equilíbrio</b>.<br>
-        Distribui as dezenas de forma organizada para ampliar a presença estatística
-        nos sorteios, respeitando a lógica matemática dos fechamentos.
-        </div>
+        Organiza as dezenas para ampliar a presença estatística
+        nos sorteios, respeitando a lógica matemática.
         """
     },
     "nucleo25": {
-        "label": "🍀 Núcleo Expandido 25™",
+        "titulo": "🍀 Núcleo Expandido 25™",
         "cor": "#8E44AD",
         "descricao": """
-        <div class='descricao'>
-        Para quem gosta de trabalhar com <b>mais massa crítica</b>.<br>
-        Expande o núcleo principal para até 25 dezenas,
-        mantendo organização, leitura estatística e disciplina de jogo —
-        abordagem comum entre quem estuda ciclos e repetição de padrões.
-        </div>
+        Para quem trabalha com <b>maior massa crítica</b>.<br>
+        Expande o núcleo para até 25 dezenas,
+        mantendo organização, leitura estatística e disciplina.
         """
     }
 }
@@ -76,7 +80,7 @@ if not st.session_state.logado:
     st.title("🔐 Acesso ao Núcleo 21")
     u = st.text_input("Usuário")
     s = st.text_input("Senha", type="password")
-    if st.button("Entrar") and u and s:
+    if st.button("🔐 Acessar Painel de Estratégias") and u and s:
         st.session_state.logado = True
         st.session_state.usuario = u
         st.rerun()
@@ -84,42 +88,52 @@ if not st.session_state.logado:
 
 # ================= SIDEBAR =================
 with st.sidebar:
-    fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
+    fechamento_nome = st.selectbox("🎯 Fechamento Utilizado", list(FECHAMENTOS.keys()))
     st.write(f"👤 **{st.session_state.usuario}**")
 
-# ================= MENU SUPERIOR =================
+# ================= TOPO =================
 st.title("🍀 Núcleo 21")
 
 c1, c2, c3 = st.columns(3)
-if c1.button("🍀 Núcleo Inteligente™", use_container_width=True):
+
+if c1.button("🍀 Ativar Leitura Inteligente", use_container_width=True):
     st.session_state.estrategia = "nucleo"
     st.session_state.analise_pronta = False
 
-if c2.button("🍀 Matriz de Cobertura™", use_container_width=True):
+if c2.button("🍀 Ativar Cobertura Estratégica", use_container_width=True):
     st.session_state.estrategia = "matriz"
     st.session_state.analise_pronta = False
 
-if c3.button("🍀 Núcleo Expandido 25™", use_container_width=True):
+if c3.button("🍀 Ativar Núcleo Avançado", use_container_width=True):
     st.session_state.estrategia = "nucleo25"
     st.session_state.analise_pronta = False
 
-st.markdown(ESTRATEGIAS[st.session_state.estrategia]["descricao"], unsafe_allow_html=True)
+estr = ESTRATEGIAS[st.session_state.estrategia]
 
-st.markdown("""
-<div class='aviso'>
-As estratégias utilizam critérios estatísticos e históricos.
-A Mega-Sena é um jogo de azar e não há garantia de premiação.
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div style="border-left:6px solid {estr['cor']}; padding-left:12px;">
+        <h4 style="color:{estr['cor']}; margin-bottom:4px;">{estr['titulo']}</h4>
+        <div class="descricao">{estr['descricao']}</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# ================= INPUTS =================
+st.markdown(
+    "<div class='aviso'>As estratégias utilizam critérios estatísticos e históricos. "
+    "A Mega-Sena é um jogo de azar e não há garantia de premiação.</div>",
+    unsafe_allow_html=True
+)
+
+# ================= INPUT =================
 if st.session_state.estrategia == "nucleo25":
-    dezenas_txt = st.text_area("Digite as 25 dezenas")
+    dezenas_txt = st.text_area("🧩 Selecione as 25 dezenas que formarão o núcleo")
 else:
-    resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
+    resultado_txt = st.text_input("🎯 Informe as dezenas sorteadas para análise")
 
-# ================= ANÁLISE =================
-if st.button("🔍 Analisar"):
+# ================= PROCESSAMENTO =================
+if st.button("🔍 Executar Leitura Estratégica"):
 
     if st.session_state.estrategia == "nucleo25":
         dezenas = converter_lista(dezenas_txt)
@@ -154,7 +168,8 @@ if st.button("🔍 Analisar"):
 # ================= RESULTADOS =================
 if st.session_state.analise_pronta:
 
-    st.subheader("🎲 Jogos Gerados")
+    st.subheader("🎲 Jogos Organizados pela Estratégia")
+
     for jogo in st.session_state.jogos:
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
@@ -167,25 +182,23 @@ if st.session_state.analise_pronta:
         st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
 
     # ================= SIMULAÇÃO =================
-    st.subheader("🧪 Simulação Estatística")
+    st.subheader("🧪 Simulação de Cenários Possíveis")
     TOTAL = 500
 
-    if st.button("▶️ Simular Estratégia"):
-        st.session_state.resultado_sim = simular_cenario(
-            st.session_state.jogos, TOTAL
-        )
+    if st.button("▶️ Testar Comportamento da Estratégia"):
+        st.session_state.resultado_sim = simular_cenario(st.session_state.jogos, TOTAL)
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("📊 Média", r["media"])
-        c2.metric("🏆 Máximo", r["maximo"])
-        c3.metric("❌ Zeros", r["zeros"])
-        c4.metric("🔢 Sorteios", TOTAL)
+        c1.metric("📊 Média de Desempenho", r["media"])
+        c2.metric("🏆 Melhor Cenário", r["maximo"])
+        c3.metric("❌ Cenários sem Pontuação", r["zeros"])
+        c4.metric("🔢 Amostras Simuladas", TOTAL)
 
 # ================= GRÁFICO =================
 st.divider()
-st.subheader("📈 Comparativo das Estratégias")
+st.subheader("📈 Evolução de Desempenho por Estratégia")
 
 dados = listar_analises_usuario(st.session_state.usuario)
 if dados:
@@ -206,7 +219,7 @@ if dados:
 
 # ================= RANKING =================
 st.divider()
-st.subheader("🏅 Ranking Geral")
+st.subheader("🏅 Ranking de Consistência Estratégica")
 ranking = gerar_ranking()
 if ranking:
     st.dataframe(pd.DataFrame(ranking), use_container_width=True)
