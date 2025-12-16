@@ -53,15 +53,15 @@ ESTRATEGIAS = {
         "label": "🔵 Matriz de Cobertura™",
         "descricao": "Geração clássica de jogos com foco em cobertura matemática."
     },
-   "nucleo25": {
-    "label": "🟣 Núcleo Expandido 25™",
-    "descricao": (
-        "Estratégia baseada na expansão controlada do núcleo numérico. "
-        "Explora 25 dezenas selecionadas para gerar jogos com alta "
-        "distribuição combinatória e equilíbrio matemático."
-    )
+    "nucleo25": {
+        "label": "🟣 Núcleo Expandido 25™",
+        "descricao": (
+            "Estratégia baseada na expansão controlada do núcleo numérico. "
+            "Explora 25 dezenas selecionadas para gerar jogos com alta "
+            "distribuição combinatória e equilíbrio matemático."
+        )
+    }
 }
-
 
 # ---------------- ESTADO ----------------
 st.session_state.setdefault("logado", False)
@@ -121,12 +121,12 @@ resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
 # ---------------- ANÁLISE ----------------
 if st.button("🔍 Analisar"):
 
-    # -------- FECHAMENTO 25 (stub) --------
-    if st.session_state.estrategia == "fechamento25":
+    # -------- NÚCLEO 25 (stub) --------
+    if st.session_state.estrategia == "nucleo25":
         st.warning(
-            "🟣 **Fechamento Garantido 25™** está em implementação.\n\n"
+            "🟣 **Núcleo Expandido 25™**\n\n"
             "Na próxima etapa você poderá selecionar 25 dezenas "
-            "e gerar automaticamente 190 jogos com garantia matemática."
+            "e gerar automaticamente 190 jogos estruturados."
         )
         st.stop()
 
@@ -218,7 +218,7 @@ if dados:
             color_discrete_map={
                 "nucleo": "#1E8449",
                 "matriz": "#2471A3",
-                "fechamento25": "#8E44AD"
+                "nucleo25": "#8E44AD"
             }
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -229,5 +229,3 @@ st.subheader("🏅 Ranking Geral")
 ranking = gerar_ranking()
 if ranking:
     st.dataframe(pd.DataFrame(ranking), use_container_width=True)
-
-
