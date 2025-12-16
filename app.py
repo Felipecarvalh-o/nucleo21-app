@@ -17,13 +17,6 @@ st.set_page_config("Núcleo 21", "🍀", layout="centered")
 # ================= ESTILO GLOBAL =================
 st.markdown("""
 <style>
-.botao-estrategia button {
-    width:100%;
-    height:60px;
-    font-size:16px;
-    font-weight:700;
-    border-radius:14px;
-}
 .numero-verde {background:#1E8449;color:white;padding:12px;border-radius:12px;font-size:20px;font-weight:700;text-align:center;}
 .numero-azul {background:#2471A3;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
 .numero-roxo {background:#8E44AD;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
@@ -35,26 +28,15 @@ st.markdown("""
 ESTRATEGIAS = {
     "nucleo": {
         "label": "🟢 Núcleo Inteligente™",
-        "descricao": (
-            "Analisa o fechamento escolhido, identifica a linha com melhor "
-            "desempenho frente ao resultado informado e gera jogos otimizados "
-            "a partir desse núcleo."
-        )
+        "descricao": "Seleciona a melhor linha do fechamento com base em desempenho."
     },
     "matriz": {
         "label": "🔵 Matriz de Cobertura™",
-        "descricao": (
-            "Geração clássica e aleatória de jogos, focada em cobertura ampla "
-            "e simplicidade operacional."
-        )
+        "descricao": "Geração clássica e aleatória de jogos."
     },
     "nucleo25": {
         "label": "🟣 Núcleo Expandido 25™",
-        "descricao": (
-            "Selecione exatamente 25 dezenas estratégicas. O sistema gera "
-            "automaticamente 190 jogos organizados, com alta distribuição "
-            "combinatória e foco educacional."
-        )
+        "descricao": "Selecione 25 dezenas e gere 190 jogos organizados."
     }
 }
 
@@ -78,7 +60,6 @@ if not st.session_state.logado:
 
 # ================= SIDEBAR =================
 with st.sidebar:
-    st.header("⚙️ Configurações")
     fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
     st.write(f"👤 **{st.session_state.usuario}**")
 
@@ -86,25 +67,21 @@ with st.sidebar:
 st.title("🍀 Núcleo 21")
 
 c1, c2, c3 = st.columns(3)
-with c1:
-    if st.button("🟢 Núcleo Inteligente™", use_container_width=True):
-        st.session_state.estrategia = "nucleo"
-        st.session_state.analise_pronta = False
-with c2:
-    if st.button("🔵 Matriz de Cobertura™", use_container_width=True):
-        st.session_state.estrategia = "matriz"
-        st.session_state.analise_pronta = False
-with c3:
-    if st.button("🟣 Núcleo Expandido 25™", use_container_width=True):
-        st.session_state.estrategia = "nucleo25"
-        st.session_state.analise_pronta = False
+if c1.button("🟢 Núcleo Inteligente™", use_container_width=True):
+    st.session_state.estrategia = "nucleo"
+    st.session_state.analise_pronta = False
+if c2.button("🔵 Matriz de Cobertura™", use_container_width=True):
+    st.session_state.estrategia = "matriz"
+    st.session_state.analise_pronta = False
+if c3.button("🟣 Núcleo Expandido 25™", use_container_width=True):
+    st.session_state.estrategia = "nucleo25"
+    st.session_state.analise_pronta = False
 
-# ================= DESCRIÇÃO =================
 st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
 
 # ================= INPUTS =================
 if st.session_state.estrategia == "nucleo25":
-    dezenas_txt = st.text_area("Digite as 25 dezenas", placeholder="01 02 03 ... 25")
+    dezenas_txt = st.text_area("Digite as 25 dezenas")
 else:
     resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
 
@@ -114,7 +91,6 @@ if st.button("🔍 Analisar"):
     if st.session_state.estrategia == "nucleo25":
         dezenas = converter_lista(dezenas_txt)
         st.session_state.jogos = gerar_jogos_nucleo25(dezenas)
-        st.session_state.analise_pronta = True
 
     else:
         resultado = converter_lista(resultado_txt)
@@ -131,7 +107,6 @@ if st.button("🔍 Analisar"):
                 melhor["numeros"],
                 "nucleo"
             )
-            st.session_state.melhor = melhor
             st.session_state.jogos = gerar_jogos(melhor["numeros"])
 
         else:
@@ -140,18 +115,36 @@ if st.button("🔍 Analisar"):
             random.shuffle(nums)
             st.session_state.jogos = [sorted(nums[i:i+6]) for i in range(0, 60, 6)]
 
-        st.session_state.analise_pronta = True
+    st.session_state.analise_pronta = True
+    st.session_state.resultado_sim = None
 
 # ================= RESULTADOS =================
 if st.session_state.analise_pronta:
+
     st.subheader("🎲 Jogos Gerados")
     for i, jogo in enumerate(st.session_state.jogos, 1):
-        st.markdown(f"**Jogo {i}**")
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
-            cor = "numero-roxo" if st.session_state.estrategia == "nucleo25" else "numero-azul"
-            c.markdown(f"<div class='{cor}'>{n:02d}</div>", unsafe_allow_html=True)
+            css = "numero-roxo" if st.session_state.estrategia == "nucleo25" else "numero-azul"
+            c.markdown(f"<div class='{css}'>{n:02d}</div>", unsafe_allow_html=True)
         st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
+
+    # ================= SIMULADOR (RESTAURADO) =================
+    st.subheader("🧪 Simulação Estatística")
+    TOTAL = 500
+
+    if st.button("▶️ Simular Estratégia"):
+        st.session_state.resultado_sim = simular_cenario(
+            st.session_state.jogos, TOTAL
+        )
+
+    if st.session_state.resultado_sim:
+        r = st.session_state.resultado_sim
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("📊 Média", r["media"])
+        c2.metric("🏆 Máximo", r["maximo"])
+        c3.metric("❌ Zeros", r["zeros"])
+        c4.metric("🔢 Sorteios", TOTAL)
 
 # ================= GRÁFICO =================
 st.divider()
