@@ -45,8 +45,21 @@ st.markdown(
 
 # ---------------- ESTRATÉGIAS ----------------
 ESTRATEGIAS = {
-    "nucleo": {"label": "🟢 Núcleo Inteligente™"},
-    "matriz": {"label": "🔵 Matriz de Cobertura™"}
+    "nucleo": {
+        "label": "🟢 Núcleo Inteligente™",
+        "descricao": "Seleciona a melhor linha do fechamento com base em desempenho."
+    },
+    "matriz": {
+        "label": "🔵 Matriz de Cobertura™",
+        "descricao": "Geração clássica de jogos com foco em cobertura matemática."
+    },
+    "fechamento25": {
+        "label": "🟣 Fechamento Garantido 25™",
+        "descricao": (
+            "Selecione 25 dezenas e gere 190 jogos com garantia mínima "
+            "de quadra caso os 6 números estejam entre as dezenas escolhidas."
+        )
+    }
 }
 
 # ---------------- ESTADO ----------------
@@ -70,16 +83,20 @@ if not st.session_state.logado:
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     fechamento_nome = st.selectbox("Fechamento", list(FECHAMENTOS.keys()))
+
     estrategia_sb = st.selectbox(
         "🧠 Estratégia",
         list(ESTRATEGIAS.keys()),
         index=list(ESTRATEGIAS.keys()).index(st.session_state.estrategia),
         format_func=lambda k: ESTRATEGIAS[k]["label"]
     )
+
     if estrategia_sb != st.session_state.estrategia:
         st.session_state.estrategia = estrategia_sb
         st.session_state.analise_pronta = False
         st.session_state.pop("melhor", None)
+
+    st.info(ESTRATEGIAS[st.session_state.estrategia]["descricao"])
 
 # ---------------- APP ----------------
 st.title("🍀 Núcleo 21")
@@ -92,6 +109,7 @@ estrategia_mobile = st.radio(
     format_func=lambda k: ESTRATEGIAS[k]["label"],
     horizontal=True
 )
+
 if estrategia_mobile != st.session_state.estrategia:
     st.session_state.estrategia = estrategia_mobile
     st.session_state.analise_pronta = False
@@ -101,6 +119,17 @@ resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
 
 # ---------------- ANÁLISE ----------------
 if st.button("🔍 Analisar"):
+
+    # -------- FECHAMENTO 25 (stub) --------
+    if st.session_state.estrategia == "fechamento25":
+        st.warning(
+            "🟣 **Fechamento Garantido 25™** está em implementação.\n\n"
+            "Na próxima etapa você poderá selecionar 25 dezenas "
+            "e gerar automaticamente 190 jogos com garantia matemática."
+        )
+        st.stop()
+
+    # -------- ESTRATÉGIAS EXISTENTES --------
     resultado = converter_lista(resultado_txt)
     if len(resultado) != 6:
         st.error("Digite exatamente 6 dezenas")
@@ -121,11 +150,14 @@ if st.button("🔍 Analisar"):
         )
         st.session_state.melhor = melhor
         st.session_state.jogos = gerar_jogos(melhor["numeros"])
-    else:
+
+    elif st.session_state.estrategia == "matriz":
         import random
         nums = list(range(1, 61))
         random.shuffle(nums)
-        st.session_state.jogos = [sorted(nums[i:i+6]) for i in range(0, 60, 6)]
+        st.session_state.jogos = [
+            sorted(nums[i:i+6]) for i in range(0, 60, 6)
+        ]
 
     st.session_state.analise_pronta = True
     st.session_state.resultado_sim = None
@@ -135,21 +167,30 @@ if st.session_state.analise_pronta:
     if st.session_state.estrategia == "nucleo" and "melhor" in st.session_state:
         cols = st.columns(6)
         for c, n in zip(cols, st.session_state.melhor["numeros"]):
-            c.markdown(f"<div class='numero-verde'>{n:02d}</div>", unsafe_allow_html=True)
+            c.markdown(
+                f"<div class='numero-verde'>{n:02d}</div>",
+                unsafe_allow_html=True
+            )
 
     st.subheader("🎲 Jogos Gerados")
     for i, jogo in enumerate(st.session_state.jogos, 1):
         st.markdown(f"**Jogo {i}**")
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
-            c.markdown(f"<div class='numero-azul'>{n:02d}</div>", unsafe_allow_html=True)
+            c.markdown(
+                f"<div class='numero-azul'>{n:02d}</div>",
+                unsafe_allow_html=True
+            )
         st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
 
     # ---------------- SIMULAÇÃO ----------------
     st.subheader("🧪 Simulação Estatística")
     TOTAL = 500
+
     if st.button("▶️ Simular Estratégia"):
-        st.session_state.resultado_sim = simular_cenario(st.session_state.jogos, TOTAL)
+        st.session_state.resultado_sim = simular_cenario(
+            st.session_state.jogos, TOTAL
+        )
 
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
@@ -172,11 +213,12 @@ if dados:
             x=df.index,
             y="pontos",
             color="estrategia",
+            markers=True,
             color_discrete_map={
                 "nucleo": "#1E8449",
-                "matriz": "#2471A3"
-            },
-            markers=True
+                "matriz": "#2471A3",
+                "fechamento25": "#8E44AD"
+            }
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -186,4 +228,3 @@ st.subheader("🏅 Ranking Geral")
 ranking = gerar_ranking()
 if ranking:
     st.dataframe(pd.DataFrame(ranking), use_container_width=True)
-
