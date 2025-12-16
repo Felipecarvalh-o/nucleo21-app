@@ -2,7 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from engine import processar_fechamento, gerar_jogos
+from engine import (
+    processar_fechamento,
+    gerar_jogos,
+    gerar_jogos_nucleo25
+)
 from historico import registrar_analise, gerar_ranking, listar_analises_usuario
 from utils import converter_lista
 from fechamentos import FECHAMENTOS
@@ -33,6 +37,15 @@ st.markdown(
         font-size:16px;
         margin-bottom:4px;
     }
+    .numero-roxo {
+        background:#8E44AD;
+        color:white;
+        text-align:center;
+        padding:10px;
+        border-radius:10px;
+        font-size:15px;
+        margin-bottom:4px;
+    }
     .bloco-jogo {
         margin-bottom:16px;
         padding-bottom:8px;
@@ -56,9 +69,8 @@ ESTRATEGIAS = {
     "nucleo25": {
         "label": "🟣 Núcleo Expandido 25™",
         "descricao": (
-            "Estratégia baseada na expansão controlada do núcleo numérico. "
-            "Explora 25 dezenas selecionadas para gerar jogos com alta "
-            "distribuição combinatória e equilíbrio matemático."
+            "Selecione 25 dezenas e gere automaticamente 190 jogos "
+            "estruturados com alta organização combinatória."
         )
     }
 }
@@ -116,56 +128,72 @@ if estrategia_mobile != st.session_state.estrategia:
     st.session_state.analise_pronta = False
     st.session_state.pop("melhor", None)
 
-resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
+# ---------------- INPUTS ----------------
+if st.session_state.estrategia == "nucleo25":
+    dezenas_25_txt = st.text_area(
+        "Digite as 25 dezenas (separadas por espaço ou vírgula)",
+        placeholder="01 02 03 ... 25"
+    )
+else:
+    resultado_txt = st.text_input("Resultado do sorteio (6 dezenas)")
 
 # ---------------- ANÁLISE ----------------
 if st.button("🔍 Analisar"):
 
-    # -------- NÚCLEO 25 (stub) --------
+    # -------- 🟣 NÚCLEO 25 --------
     if st.session_state.estrategia == "nucleo25":
-        st.warning(
-            "🟣 **Núcleo Expandido 25™**\n\n"
-            "Na próxima etapa você poderá selecionar 25 dezenas "
-            "e gerar automaticamente 190 jogos estruturados."
-        )
-        st.stop()
+        dezenas = converter_lista(dezenas_25_txt)
 
-    # -------- ESTRATÉGIAS EXISTENTES --------
-    resultado = converter_lista(resultado_txt)
-    if len(resultado) != 6:
-        st.error("Digite exatamente 6 dezenas")
-        st.stop()
+        try:
+            jogos = gerar_jogos_nucleo25(dezenas)
+        except ValueError as e:
+            st.error(str(e))
+            st.stop()
 
-    pool = list(range(1, 61))
-    fechamento = FECHAMENTOS[fechamento_nome]
+        st.session_state.jogos = jogos
+        st.session_state.analise_pronta = True
+        st.session_state.resultado_sim = None
+        st.session_state.pop("melhor", None)
 
-    if st.session_state.estrategia == "nucleo":
-        _, melhor = processar_fechamento(pool, resultado, fechamento)
-        registrar_analise(
-            st.session_state.usuario,
-            fechamento_nome,
-            resultado,
-            melhor["pontos"],
-            melhor["numeros"],
-            "nucleo"
-        )
-        st.session_state.melhor = melhor
-        st.session_state.jogos = gerar_jogos(melhor["numeros"])
+    # -------- 🟢 NÚCLEO INTELIGENTE / 🔵 MATRIZ --------
+    else:
+        resultado = converter_lista(resultado_txt)
+        if len(resultado) != 6:
+            st.error("Digite exatamente 6 dezenas")
+            st.stop()
 
-    elif st.session_state.estrategia == "matriz":
-        import random
-        nums = list(range(1, 61))
-        random.shuffle(nums)
-        st.session_state.jogos = [
-            sorted(nums[i:i+6]) for i in range(0, 60, 6)
-        ]
+        pool = list(range(1, 61))
+        fechamento = FECHAMENTOS[fechamento_nome]
 
-    st.session_state.analise_pronta = True
-    st.session_state.resultado_sim = None
+        if st.session_state.estrategia == "nucleo":
+            _, melhor = processar_fechamento(pool, resultado, fechamento)
+            registrar_analise(
+                st.session_state.usuario,
+                fechamento_nome,
+                resultado,
+                melhor["pontos"],
+                melhor["numeros"],
+                "nucleo"
+            )
+            st.session_state.melhor = melhor
+            st.session_state.jogos = gerar_jogos(melhor["numeros"])
+
+        elif st.session_state.estrategia == "matriz":
+            import random
+            nums = list(range(1, 61))
+            random.shuffle(nums)
+            st.session_state.jogos = [
+                sorted(nums[i:i+6]) for i in range(0, 60, 6)
+            ]
+
+        st.session_state.analise_pronta = True
+        st.session_state.resultado_sim = None
 
 # ---------------- RESULTADOS ----------------
 if st.session_state.analise_pronta:
+
     if st.session_state.estrategia == "nucleo" and "melhor" in st.session_state:
+        st.subheader("🏆 Linha Base Selecionada")
         cols = st.columns(6)
         for c, n in zip(cols, st.session_state.melhor["numeros"]):
             c.markdown(
@@ -174,12 +202,14 @@ if st.session_state.analise_pronta:
             )
 
     st.subheader("🎲 Jogos Gerados")
+
     for i, jogo in enumerate(st.session_state.jogos, 1):
         st.markdown(f"**Jogo {i}**")
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
+            css = "numero-roxo" if st.session_state.estrategia == "nucleo25" else "numero-azul"
             c.markdown(
-                f"<div class='numero-azul'>{n:02d}</div>",
+                f"<div class='{css}'>{n:02d}</div>",
                 unsafe_allow_html=True
             )
         st.markdown("<div class='bloco-jogo'></div>", unsafe_allow_html=True)
@@ -201,7 +231,7 @@ if st.session_state.analise_pronta:
         c3.metric("❌ Zeros", r["zeros"])
         c4.metric("🔢 Sorteios", TOTAL)
 
-# ---------------- GRÁFICO ESTRATÉGIAS ----------------
+# ---------------- GRÁFICO ----------------
 st.divider()
 st.subheader("📈 Comparativo das Estratégias")
 
