@@ -1,9 +1,6 @@
 from itertools import combinations
-from collections import Counter
 import random
 
-
-# ---------------- BÁSICO ----------------
 
 def calcular_score(numeros, resultado):
     return len(set(numeros) & set(resultado))
@@ -31,24 +28,24 @@ def processar_fechamento(pool, resultado, fechamento):
     return linhas, melhor
 
 
-def gerar_jogos(numeros_base):
+def gerar_jogos(numeros_base, limite=6):
     """
     Núcleo Inteligente™
-    Gera até 6 jogos a partir do núcleo base
     """
-    return [list(j) for j in combinations(sorted(numeros_base), 6)][:6]
+    combs = list(combinations(sorted(numeros_base), 6))
+    random.shuffle(combs)
+    return [list(c) for c in combs[:limite]]
 
 
-# ---------------- NÚCLEO EXPANDIDO 25™ ----------------
+# ===================================================
+# 🟣 NÚCLEO EXPANDIDO 25™ — FECHAMENTO REAL
+# ===================================================
 
 def validar_dezenas_25(dezenas):
-    if not isinstance(dezenas, list):
-        return False, "Entrada inválida."
-
     dezenas = sorted(set(dezenas))
 
     if len(dezenas) != 25:
-        return False, "Você deve informar exatamente 25 dezenas."
+        return False, "Informe exatamente 25 dezenas."
 
     if any(n < 1 or n > 60 for n in dezenas):
         return False, "As dezenas devem estar entre 1 e 60."
@@ -58,37 +55,31 @@ def validar_dezenas_25(dezenas):
 
 def gerar_jogos_nucleo25(dezenas_25, total_jogos=190):
     """
-    Núcleo Expandido 25™ (balanceado)
-    ---------------------------------
-    - Gera 190 jogos de 6 dezenas
-    - Controla repetição excessiva
-    - Distribuição uniforme das dezenas
-    - Estrutura educacional e estatística
+    Núcleo Expandido 25™
+    Estratégia com distribuição balanceada
+    (não usa primeiras combinações)
     """
 
-    valido, resultado = validar_dezenas_25(dezenas_25)
+    valido, dezenas = validar_dezenas_25(dezenas_25)
     if not valido:
-        raise ValueError(resultado)
-
-    dezenas = resultado
+        raise ValueError(dezenas)
 
     todas = list(combinations(dezenas, 6))
+
+    # 🔹 Embaralha para evitar jogos colados
     random.shuffle(todas)
 
-    contador = Counter()
-    jogos = []
+    selecionados = []
+    freq = {n: 0 for n in dezenas}
 
     for jogo in todas:
-        # score de repetição (quanto menor, melhor)
-        repeticao = sum(contador[n] for n in jogo)
-
-        # regra simples e eficiente de balanceamento
-        if repeticao <= 6:
-            jogos.append(list(jogo))
+        # Evita sobrecarga de dezenas
+        if all(freq[n] < (total_jogos * 6 / 25) + 2 for n in jogo):
+            selecionados.append(list(jogo))
             for n in jogo:
-                contador[n] += 1
+                freq[n] += 1
 
-        if len(jogos) >= total_jogos:
+        if len(selecionados) >= total_jogos:
             break
 
-    return jogos
+    return selecionados
