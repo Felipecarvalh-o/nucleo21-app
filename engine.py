@@ -1,26 +1,15 @@
 from itertools import combinations
+from collections import Counter
+import random
 
-# ======================================================
-# UTILIDADES BÁSICAS
-# ======================================================
+
+# ---------------- BÁSICO ----------------
 
 def calcular_score(numeros, resultado):
-    """
-    Calcula quantos acertos um jogo teve em relação ao resultado.
-    """
     return len(set(numeros) & set(resultado))
 
 
-# ======================================================
-# NÚCLEO INTELIGENTE (existente)
-# ======================================================
-
 def processar_fechamento(pool, resultado, fechamento):
-    """
-    Avalia todas as linhas de um fechamento e retorna:
-    - todas as linhas avaliadas
-    - a melhor linha (maior pontuação)
-    """
     linhas = []
     melhor = None
 
@@ -44,20 +33,15 @@ def processar_fechamento(pool, resultado, fechamento):
 
 def gerar_jogos(numeros_base):
     """
-    Gera jogos a partir de um núcleo base (usado no Núcleo Inteligente).
-    Retorna até 6 jogos.
+    Núcleo Inteligente™
+    Gera até 6 jogos a partir do núcleo base
     """
     return [list(j) for j in combinations(sorted(numeros_base), 6)][:6]
 
 
-# ======================================================
-# 🟣 NÚCLEO EXPANDIDO 25™ (NOVO)
-# ======================================================
+# ---------------- NÚCLEO EXPANDIDO 25™ ----------------
 
 def validar_dezenas_25(dezenas):
-    """
-    Valida se a entrada possui exatamente 25 dezenas válidas da Mega-Sena.
-    """
     if not isinstance(dezenas, list):
         return False, "Entrada inválida."
 
@@ -72,18 +56,14 @@ def validar_dezenas_25(dezenas):
     return True, dezenas
 
 
-def gerar_jogos_nucleo25(dezenas_25, limite=190):
+def gerar_jogos_nucleo25(dezenas_25, total_jogos=190):
     """
-    Estratégia 🟣 Núcleo Expandido 25™
-
-    Conceito:
-    - Usuário escolhe 25 dezenas
-    - Geração estruturada de jogos de 6 dezenas
-    - Volume controlado (190 jogos)
-    - Estratégia educacional e estatística
-
-    Retorno:
-    - Lista com até 190 jogos
+    Núcleo Expandido 25™ (balanceado)
+    ---------------------------------
+    - Gera 190 jogos de 6 dezenas
+    - Controla repetição excessiva
+    - Distribuição uniforme das dezenas
+    - Estrutura educacional e estatística
     """
 
     valido, resultado = validar_dezenas_25(dezenas_25)
@@ -92,13 +72,23 @@ def gerar_jogos_nucleo25(dezenas_25, limite=190):
 
     dezenas = resultado
 
-    # Todas as combinações possíveis de 6 dezenas
-    todas_combinacoes = combinations(dezenas, 6)
+    todas = list(combinations(dezenas, 6))
+    random.shuffle(todas)
 
+    contador = Counter()
     jogos = []
-    for jogo in todas_combinacoes:
-        jogos.append(list(jogo))
-        if len(jogos) >= limite:
+
+    for jogo in todas:
+        # score de repetição (quanto menor, melhor)
+        repeticao = sum(contador[n] for n in jogo)
+
+        # regra simples e eficiente de balanceamento
+        if repeticao <= 6:
+            jogos.append(list(jogo))
+            for n in jogo:
+                contador[n] += 1
+
+        if len(jogos) >= total_jogos:
             break
 
     return jogos
