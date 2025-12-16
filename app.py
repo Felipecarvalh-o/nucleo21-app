@@ -53,13 +53,13 @@ ESTRATEGIAS = {
         "label": "🔵 Matriz de Cobertura™",
         "descricao": "Geração clássica de jogos com foco em cobertura matemática."
     },
-    "fechamento25": {
-        "label": "🟣 Fechamento Garantido 25™",
-        "descricao": (
-            "Selecione 25 dezenas e gere 190 jogos com garantia mínima "
-            "de quadra caso os 6 números estejam entre as dezenas escolhidas."
-        )
-    }
+   "nucleo25": {
+    "label": "🟣 Núcleo 25™",
+    "descricao": (
+        "Estratégia avançada baseada em um núcleo ampliado de 25 dezenas. "
+        "Organiza combinações de forma estruturada para maximizar cobertura "
+        "e consistência estatística dentro de um conjunto expandido."
+    )
 }
 
 # ---------------- ESTADO ----------------
@@ -228,3 +228,4 @@ st.subheader("🏅 Ranking Geral")
 ranking = gerar_ranking()
 if ranking:
     st.dataframe(pd.DataFrame(ranking), use_container_width=True)
+
