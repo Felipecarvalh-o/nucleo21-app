@@ -20,10 +20,26 @@ st.markdown("""
 .numero-verde {background:#1E8449;color:white;padding:12px;border-radius:12px;font-size:20px;font-weight:700;text-align:center;}
 .numero-azul {background:#2471A3;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
 .numero-roxo {background:#8E44AD;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
-.bloco-jogo {margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e0e0e0;}
+
 .descricao {font-size:15px;line-height:1.6;}
 .aviso {font-size:12px;color:#777;margin-top:8px;}
 .score {font-size:14px;font-weight:600;margin-top:6px;}
+
+.jogo-container {
+    padding: 14px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    margin-bottom: 20px;
+}
+
+.jogo-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13px;
+    color:#bbb;
+    margin-bottom:8px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,9 +81,8 @@ ESTRATEGIAS = {
         "score": "🔵 Jogo bem espalhado",
         "descricao": """
         Aqui a ideia é <b>espalhar o jogo</b>.<br>
-        A Matriz de Cobertura™ organiza as dezenas para aumentar a presença
-        nos sorteios, muito usada por quem acredita que,
-        com volume e constância, uma <i>quadra ou quina acaba aparecendo</i>.
+        Muito usada por quem acredita que, com volume e constância,
+        uma <i>quadra ou quina acaba aparecendo</i>.
         """
     },
     "nucleo25": {
@@ -76,9 +91,8 @@ ESTRATEGIAS = {
         "score": "🟣 Cobertura pesada",
         "descricao": """
         Estratégia para quem gosta de jogo mais forte.<br>
-        Trabalha com mais dezenas, organizando os jogos para buscar
-        <b>cobertura pesada</b>, modelo comum entre quem estuda ciclos,
-        repetição e tenta <i>bater pelo menos uma quadra ou quina</i>.
+        Organização de dezenas para buscar <b>cobertura pesada</b>,
+        comum entre quem estuda ciclos e repetição.
         """
     }
 }
@@ -89,6 +103,7 @@ st.session_state.setdefault("usuario", "")
 st.session_state.setdefault("estrategia", "nucleo")
 st.session_state.setdefault("analise_pronta", False)
 st.session_state.setdefault("resultado_sim", None)
+st.session_state.setdefault("modo_compacto", False)
 
 # ================= LOGIN =================
 if not st.session_state.logado:
@@ -105,13 +120,16 @@ if not st.session_state.logado:
 with st.sidebar:
     fechamento_nome = st.selectbox("🎯 Fechamento Utilizado", list(FECHAMENTOS.keys()))
 
+    st.session_state.modo_compacto = st.toggle(
+        "🔳 Modo compacto", value=st.session_state.modo_compacto
+    )
+
     with st.expander("📘 Como funciona a simulação"):
         st.write("""
-        A simulação faz sorteios aleatórios e observa se os jogos
-        chegariam perto de uma quadra, quina ou mais nesses cenários.
+        A simulação executa sorteios aleatórios e observa
+        se os jogos chegariam perto de uma quadra, quina ou mais.
 
-        Ela **não prevê resultados**, **não garante prêmio**
-        e serve apenas para estudo do comportamento dos jogos.
+        Não prevê resultados e não garante prêmio.
         """)
 
 # ================= TOPO =================
@@ -140,19 +158,16 @@ st.markdown(
 
 st.markdown("""
 <div class='aviso'>
-Este aplicativo é uma ferramenta independente de análise estatística.
-Não possui qualquer vínculo com a Caixa Econômica Federal,
-Loterias Caixa ou órgãos oficiais.
-A Mega-Sena é um jogo de azar e não há garantia de premiação,
-incluindo quadra, quina ou sena.
+Aplicativo independente, sem vínculo com Caixa Econômica Federal ou Loterias Caixa.
+Mega-Sena é jogo de azar. Não há garantia de premiação (quadra, quina ou sena).
 </div>
 """, unsafe_allow_html=True)
 
 # ================= INPUT =================
 if st.session_state.estrategia == "nucleo25":
-    dezenas_txt = st.text_area("🧩 Selecione as 25 dezenas que formarão o núcleo")
+    dezenas_txt = st.text_area("🧩 Selecione as 25 dezenas")
 else:
-    resultado_txt = st.text_input("🎯 Informe as dezenas sorteadas para análise")
+    resultado_txt = st.text_input("🎯 Informe as dezenas sorteadas")
 
 # ================= PROCESSAMENTO =================
 if st.button("🔍 Executar Leitura Estratégica"):
@@ -192,7 +207,16 @@ if st.button("🔍 Executar Leitura Estratégica"):
 if st.session_state.analise_pronta:
 
     st.subheader("🎲 Jogos Organizados pela Estratégia")
-    for jogo in st.session_state.jogos:
+
+    for idx, jogo in enumerate(st.session_state.jogos, 1):
+
+        if not st.session_state.modo_compacto:
+            st.markdown("<div class='jogo-container'>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='jogo-header'>Jogo {idx:02d}</div>",
+                unsafe_allow_html=True
+            )
+
         cols = st.columns(6)
         for c, n in zip(cols, jogo):
             css = (
@@ -202,6 +226,16 @@ if st.session_state.analise_pronta:
             )
             c.markdown(f"<div class='{css}'>{n:02d}</div>", unsafe_allow_html=True)
 
+        jogo_txt = " ".join(f"{n:02d}" for n in jogo)
+        st.button(
+            "📋 Copiar jogo",
+            key=f"copy_{idx}",
+            help=jogo_txt
+        )
+
+        if not st.session_state.modo_compacto:
+            st.markdown("</div>", unsafe_allow_html=True)
+
     st.subheader("🧪 Simulação de Cenários Possíveis")
     if st.button("▶️ Testar Comportamento da Estratégia"):
         st.session_state.resultado_sim = simular_cenario(st.session_state.jogos)
@@ -209,17 +243,14 @@ if st.session_state.analise_pronta:
     if st.session_state.resultado_sim:
         r = st.session_state.resultado_sim
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("📊 Média de Desempenho", r["media"],
-                  help="Média do melhor desempenho observado nos cenários.")
-        c2.metric("🏆 Melhor Cenário", r["maximo"],
-                  help="Maior pontuação observada (quadra, quina ou mais).")
-        c3.metric("❌ Cenários sem Pontuação", r["zeros"],
-                  help="Cenários onde nenhum jogo chegou perto.")
-        c4.metric("🔢 Amostras Simuladas", r["total"])
+        c1.metric("📊 Média", r["media"])
+        c2.metric("🏆 Melhor", r["maximo"])
+        c3.metric("❌ Zeros", r["zeros"])
+        c4.metric("🔢 Amostras", r["total"])
 
 # ================= GRÁFICO =================
 st.divider()
-st.subheader("📈 Evolução de Desempenho por Estratégia")
+st.subheader("📈 Evolução de Desempenho")
 
 dados = listar_analises_usuario(st.session_state.usuario)
 if dados:
@@ -240,7 +271,7 @@ if dados:
 
 # ================= RANKING =================
 st.divider()
-st.subheader("🏅 Ranking de Consistência Estratégica")
+st.subheader("🏅 Ranking Geral")
 ranking = gerar_ranking()
 if ranking:
     st.dataframe(pd.DataFrame(ranking), use_container_width=True)
