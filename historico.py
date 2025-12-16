@@ -4,59 +4,92 @@ from datetime import datetime
 
 ARQUIVO = "historico.json"
 
-# ---------------- ARQUIVO ----------------
+# ===================================================
+# 📂 CONTROLE DE ARQUIVO
+# ===================================================
+
 def _carregar():
     if not os.path.exists(ARQUIVO):
         return []
     with open(ARQUIVO, "r", encoding="utf-8") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
 
 def _salvar(dados):
     with open(ARQUIVO, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=2)
 
-# ---------------- REGISTRO ----------------
-def registrar_analise(usuario, fechamento, resultado, pontos, numeros, estrategia=None):
+
+# ===================================================
+# 📝 REGISTRO DE ANÁLISE
+# ===================================================
+
+def registrar_analise(
+    usuario,
+    fechamento,
+    resultado,
+    pontos,
+    numeros,
+    estrategia=None
+):
+    """
+    Registra uma análise no histórico.
+    'estrategia' é FUNDAMENTAL para gráficos comparativos.
+    """
+
     dados = _carregar()
+
     dados.append({
         "usuario": usuario,
         "fechamento": fechamento,
         "resultado": resultado,
         "pontos": int(pontos),
         "numeros": numeros,
-        "estrategia": estrategia,  # NOVO (opcional)
+        "estrategia": estrategia,  # nucleo | matriz | nucleo25
         "data": datetime.now().isoformat()
     })
+
     _salvar(dados)
 
-# ---------------- UTIL ----------------
+
+# ===================================================
+# 🔧 UTILITÁRIOS
+# ===================================================
+
 def _extrair_pontos(d):
     p = d.get("pontos")
     if isinstance(p, (int, float)):
-        return p
+        return int(p)
     return None
 
-# ---------------- RANKING GERAL ----------------
+
+# ===================================================
+# 🏅 RANKING GERAL (POR USUÁRIO)
+# ===================================================
+
 def gerar_ranking():
     dados = _carregar()
     ranking = {}
 
     for d in dados:
-        u = d.get("usuario")
+        usuario = d.get("usuario")
         pontos = _extrair_pontos(d)
 
-        if not u or pontos is None:
+        if not usuario or pontos is None:
             continue
 
-        ranking.setdefault(u, []).append(pontos)
+        ranking.setdefault(usuario, []).append(pontos)
 
     resultado = []
-    for u, pts in ranking.items():
+    for usuario, pts in ranking.items():
         if not pts:
             continue
 
         resultado.append({
-            "usuario": u,
+            "usuario": usuario,
             "media": round(sum(pts) / len(pts), 2),
             "analises": len(pts),
             "maximo": max(pts)
@@ -64,7 +97,11 @@ def gerar_ranking():
 
     return resultado
 
-# ---------------- RANKING POR USUÁRIO ----------------
+
+# ===================================================
+# 🧑‍💻 RANKING INDIVIDUAL
+# ===================================================
+
 def gerar_ranking_por_usuario(usuario):
     dados = _carregar()
     pts = []
@@ -87,22 +124,35 @@ def gerar_ranking_por_usuario(usuario):
         "maximo": max(pts)
     }]
 
-# ---------------- HISTÓRICO USUÁRIO ----------------
+
+# ===================================================
+# 📜 HISTÓRICO COMPLETO DO USUÁRIO
+# ===================================================
+
 def listar_analises_usuario(usuario):
     dados = _carregar()
-    registros = [d for d in dados if d.get("usuario") == usuario]
+
+    registros = [
+        d for d in dados
+        if d.get("usuario") == usuario
+    ]
+
     registros.sort(key=lambda x: x.get("data", ""))
     return registros
 
+
 # ===================================================
-# 🚀 NOVO — COMPARATIVO POR ESTRATÉGIA (ETAPA 2)
+# 📈 RESUMO POR ESTRATÉGIA (GRÁFICO)
 # ===================================================
 
 def resumo_por_estrategia(usuario):
     """
-    Retorna desempenho médio por estratégia para o usuário.
-    Usa apenas registros que tenham 'estrategia'.
+    Retorna desempenho médio por estratégia:
+    - nucleo
+    - matriz
+    - nucleo25
     """
+
     dados = _carregar()
     mapa = {}
 
@@ -119,12 +169,12 @@ def resumo_por_estrategia(usuario):
         mapa.setdefault(estrategia, []).append(pontos)
 
     resultado = []
-    for est, pts in mapa.items():
+    for estrategia, pts in mapa.items():
         if not pts:
             continue
 
         resultado.append({
-            "estrategia": est,
+            "estrategia": estrategia,
             "media": round(sum(pts) / len(pts), 2),
             "analises": len(pts),
             "maximo": max(pts)
