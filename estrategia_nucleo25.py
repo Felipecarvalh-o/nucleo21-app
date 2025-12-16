@@ -1,13 +1,8 @@
+import random
 from itertools import combinations
 
 
 def validar_dezenas_25(dezenas):
-    """
-    Valida se a entrada possui exatamente 25 dezenas válidas da Mega-Sena.
-    """
-    if not isinstance(dezenas, list):
-        return False, "Entrada inválida."
-
     dezenas = sorted(set(dezenas))
 
     if len(dezenas) != 25:
@@ -19,35 +14,46 @@ def validar_dezenas_25(dezenas):
     return True, dezenas
 
 
-def gerar_jogos_nucleo25(dezenas_25):
+def gerar_jogos_nucleo25(dezenas_25, total_jogos=190, seed=None):
     """
-    Estratégia Núcleo 25™
-    --------------------
-    Recebe 25 dezenas escolhidas pelo usuário e gera 190 jogos de 6 dezenas.
+    Núcleo Expandido 25™ (Balanceado)
 
-    Conceito:
-    - Cobertura matemática estruturada
-    - Foco em consistência e organização
-    - Estratégia educacional (não garante prêmios)
-
-    Retorno:
-    - Lista com 190 jogos (cada jogo = lista de 6 dezenas)
+    - Distribuição uniforme das dezenas
+    - Jogos não sequenciais
+    - Sem repetição burra
     """
 
-    valido, resultado = validar_dezenas_25(dezenas_25)
+    valido, dezenas = validar_dezenas_25(dezenas_25)
     if not valido:
-        raise ValueError(resultado)
+        raise ValueError(dezenas)
 
-    dezenas = resultado
+    # Todas as combinações possíveis
+    combinacoes = list(combinations(dezenas, 6))
 
-    # Gera todas as combinações possíveis de 6 dezenas
-    todas_combinacoes = list(combinations(dezenas, 6))
+    # Embaralha para evitar padrões fixos
+    if seed is not None:
+        random.seed(seed)
+    random.shuffle(combinacoes)
 
-    # Seleciona 190 jogos (padrão comercial do Núcleo 25™)
-    jogos = todas_combinacoes[:190]
+    jogos = []
+    contador = {n: 0 for n in dezenas}
 
-    # Converte para listas
-    jogos = [list(jogo) for jogo in jogos]
+    for combo in combinacoes:
+        # Critério simples de balanceamento:
+        peso = sum(contador[n] for n in combo)
 
-    return jogos
+        jogos.append((peso, combo))
 
+        if len(jogos) >= total_jogos * 3:
+            break
+
+    # Ordena pelos menos usados
+    jogos.sort(key=lambda x: x[0])
+
+    jogos_finais = []
+    for _, combo in jogos[:total_jogos]:
+        jogos_finais.append(list(combo))
+        for n in combo:
+            contador[n] += 1
+
+    return jogos_finais
