@@ -22,8 +22,8 @@ st.markdown("""
 .numero-roxo {background:#8E44AD;color:white;padding:10px;border-radius:10px;font-size:16px;text-align:center;}
 .bloco-jogo {margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e0e0e0;}
 .descricao {font-size:15px;line-height:1.6;}
-.aviso {font-size:12px;color:#777;margin-top:6px;}
-.score {font-size:14px;font-weight:600;margin-top:8px;}
+.aviso {font-size:12px;color:#777;margin-top:8px;}
+.score {font-size:14px;font-weight:600;margin-top:6px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -35,9 +35,9 @@ if st.session_state.onboarding_step <= 3:
     st.title("🍀 Bem-vindo ao Núcleo 21")
 
     mensagens = {
-        1: "Aqui você organiza jogos com base em critérios estatísticos e históricos.",
-        2: "As estratégias ajudam a estruturar cenários, não prever resultados.",
-        3: "Escolha uma estratégia, analise e explore os comportamentos possíveis."
+        1: "Aqui você organiza jogos e dezenas do jeito que o apostador gosta: com critério.",
+        2: "As estratégias ajudam a chegar perto (quadra, quina), mas não prevêem resultado.",
+        3: "Escolha a estratégia, analise e estude o comportamento dos jogos."
     }
 
     st.info(mensagens[st.session_state.onboarding_step])
@@ -52,20 +52,34 @@ ESTRATEGIAS = {
     "nucleo": {
         "titulo": "🍀 Núcleo Inteligente™",
         "cor": "#1E8449",
-        "score": "🟢 Organização Alta",
-        "descricao": "Leitura focada em desempenho histórico e eficiência observada."
+        "score": "🟢 Boa leitura de jogo",
+        "descricao": """
+        Onde muitos jogam no escuro, o <b>Núcleo Inteligente™</b> joga com leitura.<br>
+        Analisa resultados passados e destaca a linha que mais <i>chegou perto</i>
+        (quadra, quina ou mais), seguindo o famoso conceito de <b>jogar no miolo</b>.
+        """
     },
     "matriz": {
         "titulo": "🍀 Matriz de Cobertura™",
         "cor": "#2471A3",
-        "score": "🔵 Distribuição Equilibrada",
-        "descricao": "Amplitude estratégica e presença estatística organizada."
+        "score": "🔵 Jogo bem espalhado",
+        "descricao": """
+        Aqui a ideia é <b>espalhar o jogo</b>.<br>
+        A Matriz de Cobertura™ organiza as dezenas para aumentar a presença
+        nos sorteios, muito usada por quem acredita que,
+        com volume e constância, uma <i>quadra ou quina acaba aparecendo</i>.
+        """
     },
     "nucleo25": {
         "titulo": "🍀 Núcleo Expandido 25™",
         "cor": "#8E44AD",
-        "score": "🟣 Estrutura Avançada",
-        "descricao": "Alta massa crítica com controle e disciplina estatística."
+        "score": "🟣 Cobertura pesada",
+        "descricao": """
+        Estratégia para quem gosta de jogo mais forte.<br>
+        Trabalha com mais dezenas, organizando os jogos para buscar
+        <b>cobertura pesada</b>, modelo comum entre quem estuda ciclos,
+        repetição e tenta <i>bater pelo menos uma quadra ou quina</i>.
+        """
     }
 }
 
@@ -93,11 +107,11 @@ with st.sidebar:
 
     with st.expander("📘 Como funciona a simulação"):
         st.write("""
-        A simulação executa sorteios aleatórios independentes
-        e observa o comportamento dos jogos nesses cenários.
+        A simulação faz sorteios aleatórios e observa se os jogos
+        chegariam perto de uma quadra, quina ou mais nesses cenários.
 
-        Ela **não prevê resultados futuros**
-        e **não garante desempenho real**.
+        Ela **não prevê resultados**, **não garante prêmio**
+        e serve apenas para estudo do comportamento dos jogos.
         """)
 
 # ================= TOPO =================
@@ -116,7 +130,7 @@ estr = ESTRATEGIAS[st.session_state.estrategia]
 st.markdown(
     f"""
     <div style="border-left:6px solid {estr['cor']}; padding-left:12px;">
-        <h4 style="color:{estr['cor']};">{estr['titulo']}</h4>
+        <h4 style="color:{estr['cor']}; margin-bottom:4px;">{estr['titulo']}</h4>
         <div class="descricao">{estr['descricao']}</div>
         <div class="score">{estr['score']}</div>
     </div>
@@ -124,10 +138,15 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown(
-    "<div class='aviso'>Uso estatístico e histórico. Não há garantia de premiação.</div>",
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div class='aviso'>
+Este aplicativo é uma ferramenta independente de análise estatística.
+Não possui qualquer vínculo com a Caixa Econômica Federal,
+Loterias Caixa ou órgãos oficiais.
+A Mega-Sena é um jogo de azar e não há garantia de premiação,
+incluindo quadra, quina ou sena.
+</div>
+""", unsafe_allow_html=True)
 
 # ================= INPUT =================
 if st.session_state.estrategia == "nucleo25":
@@ -193,9 +212,9 @@ if st.session_state.analise_pronta:
         c1.metric("📊 Média de Desempenho", r["media"],
                   help="Média do melhor desempenho observado nos cenários.")
         c2.metric("🏆 Melhor Cenário", r["maximo"],
-                  help="Maior pontuação observada em um cenário.")
+                  help="Maior pontuação observada (quadra, quina ou mais).")
         c3.metric("❌ Cenários sem Pontuação", r["zeros"],
-                  help="Quantidade de cenários sem acertos.")
+                  help="Cenários onde nenhum jogo chegou perto.")
         c4.metric("🔢 Amostras Simuladas", r["total"])
 
 # ================= GRÁFICO =================
