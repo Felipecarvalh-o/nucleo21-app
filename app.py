@@ -54,13 +54,14 @@ ESTRATEGIAS = {
         "descricao": "Geração clássica de jogos com foco em cobertura matemática."
     },
    "nucleo25": {
-    "label": "🟣 Núcleo 25™",
+    "label": "🟣 Núcleo Expandido 25™",
     "descricao": (
-        "Estratégia avançada baseada em um núcleo ampliado de 25 dezenas. "
-        "Organiza combinações de forma estruturada para maximizar cobertura "
-        "e consistência estatística dentro de um conjunto expandido."
+        "Estratégia baseada na expansão controlada do núcleo numérico. "
+        "Explora 25 dezenas selecionadas para gerar jogos com alta "
+        "distribuição combinatória e equilíbrio matemático."
     )
 }
+
 
 # ---------------- ESTADO ----------------
 st.session_state.setdefault("logado", False)
@@ -228,4 +229,5 @@ st.subheader("🏅 Ranking Geral")
 ranking = gerar_ranking()
 if ranking:
     st.dataframe(pd.DataFrame(ranking), use_container_width=True)
+
 
